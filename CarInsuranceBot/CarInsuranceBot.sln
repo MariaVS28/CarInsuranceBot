@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarInsuranceBot.API", "CarInsuranceBot.API\CarInsuranceBot.API.csproj", "{E9551680-5C1D-4738-B161-9B9687FB35A7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarInsuranceBot.BLL", "CarInsuranceBot.BLL\CarInsuranceBot.BLL.csproj", "{287D86DB-E035-4713-AEBF-6129F597AE25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{E9551680-5C1D-4738-B161-9B9687FB35A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9551680-5C1D-4738-B161-9B9687FB35A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9551680-5C1D-4738-B161-9B9687FB35A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{287D86DB-E035-4713-AEBF-6129F597AE25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{287D86DB-E035-4713-AEBF-6129F597AE25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{287D86DB-E035-4713-AEBF-6129F597AE25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{287D86DB-E035-4713-AEBF-6129F597AE25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
