@@ -1,30 +1,30 @@
 ﻿using Telegram.Bot;
-using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class FlowService(ITelegramBotClient _botClient) : IFlowService
+    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService) : IFlowService
     {
         public async Task ProcessTelegramCommand(long chatId, string? text)
         {
             switch (text)
             {
                 case "/start":
-                    await ProcessStart(chatId, text);
+                    await ProcessStart(chatId);
                     break;
                 case "/help":
-                    await ProcessHelp(chatId, text);
+                    await ProcessHelp(chatId);
                     break;
                 default:
-                    await _botClient.SendMessage(chatId, $"Unknown command: {text}");
+                    await ProcessUnknownCommand(chatId);
                     break;
             }
         }
 
-        private async Task ProcessStart(long chatId, string? text)
+        private async Task ProcessStart(long chatId)
         {
+            var aiMsg = await _aIChatService.GetChatCompletionAsync("Greet the user of car insurance service.");
             var msg = "Hello! 👋\n"
-                    + "I’m your Car Insurance Assistant Bot.\n\n"
+                    + $"{aiMsg}\n"
                     + "Here’s how it works:\n"
                     + "1️⃣ I will guide you step by step to create your insurance policy.\n"
                     + "2️⃣ You’ll need to upload photos of your passport and vehicle registration certificate.\n"
@@ -36,7 +36,7 @@ namespace CarInsuranceBot.BLL.Services
             await _botClient.SendMessage(chatId, msg);
         }
 
-        private async Task ProcessHelp(long chatId, string? text)
+        private async Task ProcessHelp(long chatId)
         {
             var msg = "Here’s how it works:\n"
                     + "1️⃣ I will guide you step by step to create your insurance policy.\n"
@@ -49,6 +49,12 @@ namespace CarInsuranceBot.BLL.Services
                     + "/help - Show instructions\n"
                     + "/cancel - Cancel current process\n";
             await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task ProcessUnknownCommand(long chatId)
+        {
+            var aiMsg = await _aIChatService.GetChatCompletionAsync("User entered unknown command, notify him about it and ask to use /help command if he has any issues.");
+            await _botClient.SendMessage(chatId, aiMsg);
         }
     }
 }
