@@ -9,9 +9,6 @@ namespace CarInsuranceBot.BLL.Services
         {
             try
             {
-                var geminiToken = Environment.GetEnvironmentVariable("GEMINI_TOKEN");
-                if (geminiToken == null) throw new Exception("Missing environment variable.");
-
                 var requestBody = new
                 {
                     contents = new[]
@@ -30,7 +27,7 @@ namespace CarInsuranceBot.BLL.Services
 
                 using var request = new HttpRequestMessage(
                     HttpMethod.Post,
-                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key={geminiToken}"
+                    $""
                 )
                 {
                     Content = new StringContent(requestJson, Encoding.UTF8, "application/json")

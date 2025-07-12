@@ -1,8 +1,9 @@
-﻿using Telegram.Bot;
+﻿using System.Net.Http;
+using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService) : IFlowService
+    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, ITelegramFileLoaderService _telegramFileLoaderService) : IFlowService
     {
         public async Task ProcessTelegramCommand(long chatId, string? text)
         {
@@ -14,10 +15,21 @@ namespace CarInsuranceBot.BLL.Services
                 case "/help":
                     await ProcessHelp(chatId);
                     break;
+                case "/ready":
+                    await ProcessReady(chatId);
+                    break;
                 default:
                     await ProcessUnknownCommand(chatId);
                     break;
             }
+        }
+
+        public async Task ProcessTelegramFile(long chatId, string fileId)
+        {
+            var file = await _botClient.GetFile(fileId);
+            var fileBytes = await _telegramFileLoaderService.DownloadTelegramFileAsync(file.FilePath);
+            var aiMsg = await _aIChatService.GetChatCompletionAsync("Provide the user an information that his photo was received.");
+            await _botClient.SendMessage(chatId, aiMsg);
         }
 
         private async Task ProcessStart(long chatId)
@@ -32,8 +44,15 @@ namespace CarInsuranceBot.BLL.Services
                     + "4️⃣ After you confirm the details, I’ll generate your insurance policy as a PDF document.\n"
                     + "5️⃣ You will receive the policy file directly here in this chat.\n\n"
                     + "At any time, you can type /help for assistance.\n\n"
-                    + "Let’s get started when you are ready!";
+                    + "Let’s get started when you are ready!\n"
+                    + "Click /ready to begin process";
             await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task ProcessReady(long chatId)
+        {
+            var aiMsg = await _aIChatService.GetChatCompletionAsync("Ask user to upload passport photo, with some guidance how to ensure the quality. Do not mention that you can't process it.");
+            await _botClient.SendMessage(chatId, aiMsg);
         }
 
         private async Task ProcessHelp(long chatId)

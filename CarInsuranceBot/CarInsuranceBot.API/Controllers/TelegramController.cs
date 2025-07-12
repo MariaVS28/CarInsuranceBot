@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot.Types;
-using Telegram.Bot;
 using CarInsuranceBot.BLL.Services;
 
 namespace CarInsuranceBot.API.Controllers
@@ -16,8 +15,25 @@ namespace CarInsuranceBot.API.Controllers
             {
                 var chatId = update.Message.Chat.Id;
                 var text = update.Message.Text;
+                string? fileId = null;
 
-                await _flowService.ProcessTelegramCommand(chatId, text);
+                if (update.Message.Photo != null)
+                {
+                    var largestPhoto = update.Message.Photo
+                        .OrderByDescending(p => p.FileSize)
+                        .First();
+
+                    fileId = largestPhoto.FileId;
+                }
+                else if (update.Message.Document != null)
+                {
+                    fileId = update.Message.Document.FileId;
+                }
+
+                if (fileId != null)
+                    await _flowService.ProcessTelegramFile(chatId, fileId);
+                else
+                    await _flowService.ProcessTelegramCommand(chatId, text);
             }
 
             return Ok();
