@@ -2,7 +2,7 @@
 {
     public interface IFlowService
     {
-        Task ProcessTelegramCommand(long chatId, string? text);
-        Task ProcessTelegramFile(long chatId, string fileId);
+        Task ProcessTelegramCommandAsync(long chatId, string? text);
+        Task ProcessTelegramFileAsync(long chatId, string fileId);
     }
 }
