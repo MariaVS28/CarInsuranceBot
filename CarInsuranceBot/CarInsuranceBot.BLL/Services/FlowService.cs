@@ -3,7 +3,7 @@ using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, ITelegramFileLoaderService _telegramFileLoaderService) : IFlowService
+    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService) : IFlowService
     {
         private HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
@@ -51,7 +51,17 @@ namespace CarInsuranceBot.BLL.Services
             var file = await _botClient.GetFile(fileId);
             var fileBytes = await _telegramFileLoaderService.DownloadTelegramFileAsync(file.FilePath);
             var aiMsg = await _aIChatService.GetChatCompletionAsync("Provide the user an information that his photo was received.");
-            //todo use mindee to parse
+
+            string? data;
+
+            if (value == ProcessStatus.Ready || value == ProcessStatus.PassportUploaded)
+            {
+                data = await _mindeeService.ParsePassportFromBytesAsync(fileBytes, file.FilePath);
+            }
+            else
+            {
+                data = await _mindeeService.ParseVehicleRegistrationAsync(fileBytes, file.FilePath);
+            }
 
             if (value == ProcessStatus.Ready)
                 Tracker.Statuses[chatId] = ProcessStatus.PassportUploaded;
@@ -59,7 +69,7 @@ namespace CarInsuranceBot.BLL.Services
                 Tracker.Statuses[chatId] = ProcessStatus.VehicleRegistrationCertificateUploaded;
 
             msg = $"{aiMsg}\n" +
-                $"Your data.....\n" +
+                $"Your data:\n {data}\n" +
                 $"Please confirm the data is correct /yes or /no for retry.";
 
             await _botClient.SendMessage(chatId, msg);

@@ -1,0 +1,95 @@
+﻿using Mindee;
+using Mindee.Input;
+using Mindee.Product.Passport;
+
+namespace CarInsuranceBot.BLL.Services
+{
+    public class MindeeService(MindeeClient _mindeeClient, HttpClient _httpClient) : IMindeeService
+    {
+        public async Task<string> ParsePassportFromBytesAsync(byte[] fileBytes, string filePath)
+        {
+            try
+            {
+                using var stream = new MemoryStream(fileBytes);
+
+                var inputSource = new LocalInputSource(stream, filePath);
+
+                var prediction = await _mindeeClient
+                    .ParseAsync<PassportV1>(inputSource);
+
+                var passportData = prediction.Document.Inference.Prediction;
+
+                return $"Passport Number: {passportData.IdNumber?.Value}\n" +
+                       $"Surname: {passportData.Surname?.Value}\n" +
+                       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
+                       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
+                       $"Expiry Date: {passportData.ExpiryDate?.Value}";
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public async Task<string> ParseVehicleRegistrationAsync(byte[] fileBytes, string filePath)
+        {
+            try
+            {
+                // Send Vehicle Registration to mindee and parse data. But I don't have an access to CarteGriseV1 API, it's paid vertion.
+
+                //using var stream = new MemoryStream(fileBytes);
+
+                //var inputSource = new LocalInputSource(stream, filePath);
+
+                //var prediction = await _mindeeClient
+                //    .ParseAsync<CarteGriseV1>(inputSource);
+
+                //var data = prediction.Document.Inference.Prediction;
+
+                //return $"The vehicle's license plate number: {data.A?.Value}\n" +
+                //   $"The vehicle's first release date: {data.B?.Value}\n" +
+                //   $"The vehicle owner's full name: {data.C1?.Value}\n" +
+                //   $"The vehicle's brand: {data.D1?.Value}\n" +
+                //   $"The Vehicle Identification Number (VIN): {data.E?.Value}";
+
+                return $"The vehicle's license plate number: AB-123-CD\n" +
+                   $"The vehicle's first release date: 1998-01-05\n" +
+                   $"The vehicle owner's full name: DUPONT YVES\n" +
+                   $"The vehicle's brand: FORD\n" +
+                   $"The Vehicle Identification Number (VIN): VFS1V2009AS1V2009";
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
+        // Method for parsing all types of documents. It's also paid verion.
+        public async Task<string> ParseGenericOcrAsync(byte[] fileBytes)
+        {
+            try
+            {
+                var content = new MultipartFormDataContent();
+                content.Add(new ByteArrayContent(fileBytes), "document", "document.jpg");
+
+                var request = new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "products/mindee/document/v1/predict"
+                )
+                {
+                    Content = content
+                };
+
+                var response = await _httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+    }
+}

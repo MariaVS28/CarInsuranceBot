@@ -1,4 +1,5 @@
 ﻿using CarInsuranceBot.BLL.Services;
+using Mindee;
 using Telegram.Bot;
 
 namespace CarInsuranceBot.API.Extensions
@@ -9,7 +10,8 @@ namespace CarInsuranceBot.API.Extensions
         {
             var telegramBotToken = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN");
             var geminiToken = Environment.GetEnvironmentVariable("GEMINI_TOKEN");
-            if (telegramBotToken == null || geminiToken == null) throw new Exception("Missing environment variable.");
+            var mindeeToken = Environment.GetEnvironmentVariable("MINDEE_KEY");
+            if (telegramBotToken == null || geminiToken == null || mindeeToken == null) throw new Exception("Missing environment variable.");
 
             services.AddSingleton<ITelegramBotClient>(provider =>
                 new TelegramBotClient(telegramBotToken));
@@ -26,6 +28,13 @@ namespace CarInsuranceBot.API.Extensions
             {
                 client.BaseAddress = new Uri($"https://api.telegram.org/file/bot{telegramBotToken}/");
                 client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
+            services.AddSingleton(new MindeeClient(mindeeToken));
+            services.AddHttpClient<IMindeeService, MindeeService>(client =>
+            {
+                client.BaseAddress = new Uri("https://api.mindee.net/v1/"); 
+                client.DefaultRequestHeaders.Add("Authorization", $"Token {mindeeToken}");
             });
 
             return services;
