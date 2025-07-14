@@ -10,6 +10,7 @@ namespace CarInsuranceBot.BLL.Services
         {
             var issueDate = DateTime.UtcNow;
             var price = "100";
+            var expirationDate = issueDate.AddDays(7);
 
             string prompt = @$"Generate a short insurance policy introduction paragraph addressed to the customer. Be friendly and professional.";
             var msg = await _aIChatService.GetChatCompletionAsync(prompt);
@@ -35,6 +36,7 @@ namespace CarInsuranceBot.BLL.Services
                         col.Item().Text($"The Vehicle's Brand: {extractedFields.VehiclesBrand}");
                         col.Item().Text($"The Vehicle Identification Number (VIN): {extractedFields.VIN}");
                         col.Item().Text($"Issue Date: {issueDate:yyyy-MM-dd}");
+                        col.Item().Text($"Expiration Date: {expirationDate:yyyy-MM-dd}");
                         col.Item().Text($"Total Price: ${price}");
 
                         col.Item().PaddingVertical(20);
