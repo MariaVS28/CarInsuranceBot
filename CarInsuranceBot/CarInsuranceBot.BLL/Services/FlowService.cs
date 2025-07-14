@@ -1,4 +1,5 @@
 ﻿using CarInsuranceBot.BLL.Enums;
+using CarInsuranceBot.BLL.Models;
 using CarInsuranceBot.BLL.Services.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -112,11 +113,13 @@ namespace CarInsuranceBot.BLL.Services
         {
             try
             {
-                await Task.Delay(5000);
-
                 Tracker.Statuses[chatId] = ProcessStatus.PolicyGenerated;
 
-                byte[] pdfBytes = _policyGenerationService.GeneratePdf(Tracker.ExtractedFields[chatId]);
+                var random = new Random();
+                Tracker.ExtractedFields[chatId] = Tracker.ExtractedFields.GetValueOrDefault(chatId, new ExtractedFields());
+                Tracker.ExtractedFields[chatId].PolicyNumber = random.Next(100000, 1000000).ToString();
+
+                byte[] pdfBytes = await _policyGenerationService.GeneratePdfAsync(Tracker.ExtractedFields[chatId]);
 
                 using var stream = new MemoryStream(pdfBytes);
 

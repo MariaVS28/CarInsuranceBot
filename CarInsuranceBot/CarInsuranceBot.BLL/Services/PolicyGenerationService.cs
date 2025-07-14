@@ -4,10 +4,16 @@ using QuestPDF.Fluent;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class PolicyGenerationService : IPolicyGenerationService
+    public class PolicyGenerationService(IAIChatService _aIChatService) : IPolicyGenerationService
     {
-        public byte[] GeneratePdf(ExtractedFields extractedFields)
+        public async Task<byte[]> GeneratePdfAsync(ExtractedFields extractedFields)
         {
+            var issueDate = DateTime.UtcNow;
+            var price = "100";
+
+            string prompt = @$"Generate a short insurance policy introduction paragraph addressed to the customer. Be friendly and professional.";
+            var msg = await _aIChatService.GetChatCompletionAsync(prompt);
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -15,11 +21,10 @@ namespace CarInsuranceBot.BLL.Services
                     page.Margin(50);
 
                     page.Header().Text("Insurance Policy").FontSize(20).Bold().AlignCenter();
-                    var issueDate = DateTime.UtcNow;
-                    var price = "100";
 
                     page.Content().Column(col =>
                     {
+                        col.Item().Text(msg);
                         col.Item().Text($"Policy Number: {extractedFields.PolicyNumber}");
                         col.Item().Text($"Customer Name: {extractedFields.Surname } + {extractedFields.GivenNames}");
                         col.Item().Text($"Customer Passport Number: {extractedFields.PassportNumber}");

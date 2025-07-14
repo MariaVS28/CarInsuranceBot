@@ -4,6 +4,6 @@ namespace CarInsuranceBot.BLL.Services.Interfaces
 {
     public interface IPolicyGenerationService
     {
-        byte[] GeneratePdf(ExtractedFields extractedFields);
+        Task<byte[]> GeneratePdfAsync(ExtractedFields extractedFields);
     }
 }
