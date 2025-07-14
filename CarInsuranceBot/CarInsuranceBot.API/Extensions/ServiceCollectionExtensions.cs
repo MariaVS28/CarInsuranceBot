@@ -1,5 +1,7 @@
 ﻿using CarInsuranceBot.BLL.Services;
+using CarInsuranceBot.BLL.Services.Interfaces;
 using Mindee;
+using QuestPDF.Infrastructure;
 using Telegram.Bot;
 
 namespace CarInsuranceBot.API.Extensions
@@ -17,6 +19,9 @@ namespace CarInsuranceBot.API.Extensions
                 new TelegramBotClient(telegramBotToken));
 
             services.AddScoped<IFlowService, FlowService>();
+            services.AddScoped<IPolicyGenerationService, PolicyGenerationService>();
+
+            QuestPDF.Settings.License = LicenseType.Community;
 
             services.AddHttpClient<IAIChatService, AIChatService>(client =>
             {

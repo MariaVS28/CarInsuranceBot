@@ -1,9 +1,11 @@
 ﻿using CarInsuranceBot.BLL.Enums;
+using CarInsuranceBot.BLL.Services.Interfaces;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService) : IFlowService
+    public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService, IPolicyGenerationService _policyGenerationService) : IFlowService
     {
         private HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
@@ -56,11 +58,11 @@ namespace CarInsuranceBot.BLL.Services
 
             if (value == ProcessStatus.Ready || value == ProcessStatus.PassportUploaded)
             {
-                data = await _mindeeService.ParsePassportFromBytesAsync(fileBytes, file.FilePath);
+                data = await _mindeeService.ParsePassportFromBytesAsync(chatId, fileBytes, file.FilePath);
             }
             else
             {
-                data = await _mindeeService.ParseVehicleRegistrationAsync(fileBytes, file.FilePath);
+                data = await _mindeeService.ParseVehicleRegistrationAsync(chatId, fileBytes, file.FilePath);
             }
 
             if (value == ProcessStatus.Ready)
@@ -108,12 +110,26 @@ namespace CarInsuranceBot.BLL.Services
 
         private async Task GeneratePolicyAsync(long chatId)
         {
-            await Task.Delay(5000);
+            try
+            {
+                await Task.Delay(5000);
 
-            //todo generate policy
-            var msg = PolicyGeneratedMessage();
-            Tracker.Statuses[chatId] = ProcessStatus.PolicyGenerated;
-            await _botClient.SendMessage(chatId, msg);
+                Tracker.Statuses[chatId] = ProcessStatus.PolicyGenerated;
+
+                byte[] pdfBytes = _policyGenerationService.GeneratePdf(Tracker.ExtractedFields[chatId]);
+
+                using var stream = new MemoryStream(pdfBytes);
+
+                await _botClient.SendDocument(
+                    chatId: chatId,
+                    document: InputFile.FromStream(stream, "insurance_policy.pdf"),
+                    caption: "📄 Here is your insurance policy PDF."
+                );
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
         }
 
         public async Task ProcessNoAsync(long chatId)
@@ -155,8 +171,7 @@ namespace CarInsuranceBot.BLL.Services
         
         private static string PolicyGeneratedMessage()
         {
-            var msg = "You've completed the application.\n" +
-                "[file]";
+            var msg = "You've completed the application.\n";
             return msg;
         }
         

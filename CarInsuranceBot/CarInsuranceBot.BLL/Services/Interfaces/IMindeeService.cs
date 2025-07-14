@@ -2,8 +2,8 @@
 {
     public interface IMindeeService
     {
-        Task<string> ParsePassportFromBytesAsync(byte[] fileBytes, string filePath);
+        Task<string> ParsePassportFromBytesAsync(long chatId, byte[] fileBytes, string filePath);
         Task<string> ParseGenericOcrAsync(byte[] fileBytes);
-        Task<string> ParseVehicleRegistrationAsync(byte[] fileBytes, string filePath);
+        Task<string> ParseVehicleRegistrationAsync(long chatId, byte[] fileBytes, string filePath);
     }
 }
