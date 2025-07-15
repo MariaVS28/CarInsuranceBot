@@ -1,4 +1,4 @@
-﻿using CarInsuranceBot.BLL.Models;
+﻿using CarInsuranceBot.DAL.Models;
 
 namespace CarInsuranceBot.BLL.Services.Interfaces
 {

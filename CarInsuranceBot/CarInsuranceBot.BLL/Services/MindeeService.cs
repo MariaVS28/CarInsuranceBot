@@ -1,4 +1,4 @@
-﻿using CarInsuranceBot.BLL.Models;
+﻿using CarInsuranceBot.DAL.Models;
 using Mindee;
 using Mindee.Input;
 using Mindee.Product.Passport;

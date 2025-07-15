@@ -1,5 +1,5 @@
-﻿using CarInsuranceBot.BLL.Enums;
-using CarInsuranceBot.BLL.Models;
+﻿using CarInsuranceBot.DAL.Models.Enums;
+using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.BLL.Services.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;

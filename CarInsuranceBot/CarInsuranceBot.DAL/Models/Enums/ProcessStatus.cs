@@ -1,4 +1,4 @@
-﻿namespace CarInsuranceBot.BLL.Enums
+﻿namespace CarInsuranceBot.DAL.Models.Enums
 {
     public enum ProcessStatus
     {

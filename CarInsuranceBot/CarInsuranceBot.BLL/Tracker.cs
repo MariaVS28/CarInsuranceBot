@@ -1,5 +1,5 @@
-﻿using CarInsuranceBot.BLL.Enums;
-using CarInsuranceBot.BLL.Models;
+﻿using CarInsuranceBot.DAL.Models.Enums;
+using CarInsuranceBot.DAL.Models;
 
 namespace CarInsuranceBot.BLL
 {

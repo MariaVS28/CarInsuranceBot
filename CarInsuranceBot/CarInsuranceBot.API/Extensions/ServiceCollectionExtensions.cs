@@ -1,5 +1,7 @@
 ﻿using CarInsuranceBot.BLL.Services;
 using CarInsuranceBot.BLL.Services.Interfaces;
+using CarInsuranceBot.DAL;
+using Microsoft.EntityFrameworkCore;
 using Mindee;
 using QuestPDF.Infrastructure;
 using Telegram.Bot;
@@ -8,12 +10,13 @@ namespace CarInsuranceBot.API.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             var telegramBotToken = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN");
             var geminiToken = Environment.GetEnvironmentVariable("GEMINI_TOKEN");
             var mindeeToken = Environment.GetEnvironmentVariable("MINDEE_KEY");
-            if (telegramBotToken == null || geminiToken == null || mindeeToken == null) throw new Exception("Missing environment variable.");
+            var azureDbPassword = Environment.GetEnvironmentVariable("AZURE_DB_PASSWORD");
+            if (telegramBotToken == null || geminiToken == null || mindeeToken == null || azureDbPassword == null) throw new Exception("Missing environment variable.");
 
             services.AddSingleton<ITelegramBotClient>(provider =>
                 new TelegramBotClient(telegramBotToken));
@@ -41,6 +44,11 @@ namespace CarInsuranceBot.API.Extensions
                 client.BaseAddress = new Uri("https://api.mindee.net/v1/"); 
                 client.DefaultRequestHeaders.Add("Authorization", $"Token {mindeeToken}");
             });
+
+            var connectionString = configuration.GetConnectionString("AzureDb");
+            connectionString = connectionString!.Replace("[Password]", azureDbPassword);
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(connectionString));
 
             return services;
         }

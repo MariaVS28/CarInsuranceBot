@@ -1,5 +1,5 @@
-﻿using CarInsuranceBot.BLL.Models;
-using CarInsuranceBot.BLL.Services.Interfaces;
+﻿using CarInsuranceBot.BLL.Services.Interfaces;
+using CarInsuranceBot.DAL.Models;
 using QuestPDF.Fluent;
 
 namespace CarInsuranceBot.BLL.Services
@@ -15,7 +15,7 @@ namespace CarInsuranceBot.BLL.Services
             string prompt = @$"Generate a short insurance policy introduction paragraph addressed to the customer. Be friendly and professional.";
             var msg = await _aIChatService.GetChatCompletionAsync(prompt);
 
-            var document = Document.Create(container =>
+            var document = QuestPDF.Fluent.Document.Create(container =>
             {
                 container.Page(page =>
                 {

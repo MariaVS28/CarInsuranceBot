@@ -1,7 +1,8 @@
-﻿namespace CarInsuranceBot.BLL.Models
+﻿namespace CarInsuranceBot.DAL.Models
 {
     public class ExtractedFields
     {
+        public int Id { get; set; }
         public string? PassportNumber { get; set; }
         public string? Surname { get; set; }
         public string? GivenNames { get; set; }
@@ -14,5 +15,7 @@
         public string? VIN { get; set; }
         public string? PolicyNumber { get; set; }
 
+        public long UserId { get; set; }
+        public User? User { get; set; }
     }
 }
