@@ -1,6 +1,7 @@
 ﻿using CarInsuranceBot.BLL.Services;
 using CarInsuranceBot.BLL.Services.Interfaces;
 using CarInsuranceBot.DAL;
+using CarInsuranceBot.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Mindee;
 using QuestPDF.Infrastructure;
@@ -23,6 +24,8 @@ namespace CarInsuranceBot.API.Extensions
 
             services.AddScoped<IFlowService, FlowService>();
             services.AddScoped<IPolicyGenerationService, PolicyGenerationService>();
+
+            services.AddScoped<IUserRepository, UserRepository>();
 
             QuestPDF.Settings.License = LicenseType.Community;
 

@@ -14,7 +14,6 @@
         public string? VehicleOwnersFullName { get; set; }
         public string? VehicleMake { get; set; }
         public string? VehicleModel { get; set; }
-        public string? PolicyNumber { get; set; }
 
         public long UserId { get; set; }
         public User? User { get; set; }

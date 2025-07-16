@@ -1,55 +1,54 @@
 ﻿using CarInsuranceBot.DAL.Models;
+using CarInsuranceBot.DAL.Repositories;
 using Mindee;
 using Mindee.Input;
 using Mindee.Product.Passport;
 using Newtonsoft.Json.Linq;
-using Sprache;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Passport;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class MindeeService(MindeeClient _mindeeClient, HttpClient _httpClient) : IMindeeService
+    public class MindeeService(MindeeClient _mindeeClient, HttpClient _httpClient, IUserRepository _userRepository) : IMindeeService
     {
-        public async Task<string> ParsePassportFromBytesAsync(long chatId, byte[] fileBytes, string filePath)
+        public async Task<string> ParsePassportFromBytesAsync(long chatId, byte[] fileBytes, string filePath, User user)
         {
             try
             {
-                //using var stream = new MemoryStream(fileBytes);
+                using var stream = new MemoryStream(fileBytes);
 
-                //var inputSource = new LocalInputSource(stream, filePath);
+                var inputSource = new LocalInputSource(stream, filePath);
 
-                //var prediction = await _mindeeClient
-                //    .ParseAsync<PassportV1>(inputSource);
+                var prediction = await _mindeeClient
+                    .ParseAsync<PassportV1>(inputSource);
 
-                //var passportData = prediction.Document.Inference.Prediction;
+                var passportData = prediction.Document.Inference.Prediction;
 
-                //Tracker.ExtractedFields[chatId] = Tracker.ExtractedFields.GetValueOrDefault(chatId, new ExtractedFields());
-                //Tracker.ExtractedFields[chatId].PassportNumber = passportData.IdNumber?.Value;
-                //Tracker.ExtractedFields[chatId].Surname = passportData.Surname?.Value;
-                //Tracker.ExtractedFields[chatId].GivenNames = string.Join(" ", passportData.GivenNames);
-                //Tracker.ExtractedFields[chatId].BirthDate = passportData.BirthDate?.Value;
-                //Tracker.ExtractedFields[chatId].ExpiryDate = passportData.ExpiryDate?.Value;
+                user.ExtractedFields ??= new ExtractedFields();
+                user.ExtractedFields.PassportNumber = passportData.IdNumber?.Value;
+                user.ExtractedFields.Surname = passportData.Surname?.Value;
+                user.ExtractedFields.GivenNames = string.Join(" ", passportData.GivenNames);
+                user.ExtractedFields.BirthDate = passportData.BirthDate?.Value;
+                user.ExtractedFields.ExpiryDate = passportData.ExpiryDate?.Value;
 
+                user.Documents.Add(new Document
+                {
+                    User = user,
+                    Content = fileBytes,
+                    Title = filePath
+                });
 
-                //return $"Passport Number: {passportData.IdNumber?.Value}\n" +
-                //       $"Surname: {passportData.Surname?.Value}\n" +
-                //       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
-                //       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
-                //       $"Expiry Date: {passportData.ExpiryDate?.Value}";
+                await _userRepository.SaveChangesAsync();
 
-                Tracker.ExtractedFields[chatId] = Tracker.ExtractedFields.GetValueOrDefault(chatId, new ExtractedFields());
-                Tracker.ExtractedFields[chatId].PassportNumber = "999228775";
-                Tracker.ExtractedFields[chatId].Surname = "JERSEY SPECIMEN";
-                Tracker.ExtractedFields[chatId].GivenNames = "ANGELA ZOE";
-                Tracker.ExtractedFields[chatId].BirthDate = "1995-01-01";
-                Tracker.ExtractedFields[chatId].ExpiryDate = "2029-11-27";
+                return $"Passport Number: {passportData.IdNumber?.Value}\n" +
+                       $"Surname: {passportData.Surname?.Value}\n" +
+                       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
+                       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
+                       $"Expiry Date: {passportData.ExpiryDate?.Value}";
 
-                return $"Passport Number: 999228775\n" +
-                       $"Surname: JERSEY SPECIMEN\n" +
-                       $"Given Names: ANGELA ZOE\n" +
-                       $"Date of Birth: 1995-01-01\n" +
-                       $"Expiry Date: 2029-11-27";
+                //return $"Passport Number: 999228775\n" +
+                //       $"Surname: JERSEY SPECIMEN\n" +
+                //       $"Given Names: ANGELA ZOE\n" +
+                //       $"Date of Birth: 1995-01-01\n" +
+                //       $"Expiry Date: 2029-11-27";
             }
             catch (Exception ex)
             {
@@ -57,16 +56,25 @@ namespace CarInsuranceBot.BLL.Services
             }
         }
 
-        public async Task<string> ParseVehicleRegistrationAsync(long chatId, byte[] fileBytes)
+        public async Task<string> ParseVehicleRegistrationAsync(long chatId, byte[] fileBytes, string filePath, User user)
         {
             var mindeeVrcKey = Environment.GetEnvironmentVariable("MINDEE_VRC_KEY");
             var mindeeVrcAccount = Environment.GetEnvironmentVariable("MINDEE_VRC_ACCOUNT");
             if (mindeeVrcKey == null || mindeeVrcAccount == null) throw new Exception("Missing environment variable.");
 
+            user.Documents.Add(new Document
+            {
+                User = user,
+                Content = fileBytes,
+                Title = filePath
+            });
+
+            await _userRepository.SaveChangesAsync();
+
             try
             {
                 var content = new MultipartFormDataContent();
-                content.Add(new ByteArrayContent(fileBytes), "document", "document.jpg");
+                content.Add(new ByteArrayContent(fileBytes), "document", filePath);
 
                 var request = new HttpRequestMessage(
                     HttpMethod.Post,
@@ -87,7 +95,7 @@ namespace CarInsuranceBot.BLL.Services
                 if (queueId == null)
                     throw new Exception("Failed to parse vehicle registration certificate");
 
-                return await PollVehicleRegistration(chatId, queueId, mindeeVrcKey, mindeeVrcAccount);
+                return await PollVehicleRegistration(chatId, queueId, mindeeVrcKey, mindeeVrcAccount, user);
             }
             catch (Exception ex)
             {
@@ -95,10 +103,8 @@ namespace CarInsuranceBot.BLL.Services
             }
         }
 
-        private async Task<string> PollVehicleRegistration(long chatId, string queueId, string mindeeVrcKey, string mindeeVrcAccount)
+        private async Task<string> PollVehicleRegistration(long chatId, string queueId, string mindeeVrcKey, string mindeeVrcAccount, User user)
         {
-            
-
             try
             {
                 const int maxRetries = 10;
@@ -139,12 +145,14 @@ namespace CarInsuranceBot.BLL.Services
                         if (data == null)
                             throw new Exception("Failed to parse vehicle registration certificate");
 
-                        Tracker.ExtractedFields[chatId] = Tracker.ExtractedFields.GetValueOrDefault(chatId, new ExtractedFields()); Tracker.ExtractedFields[chatId].PassportNumber = "999228775";
-                        Tracker.ExtractedFields[chatId].VehicleOwnersFullName = data.SelectToken("owner_name.value")?.ToString();
-                        Tracker.ExtractedFields[chatId].VehiclesRegistrationDate = data["registration_date"]?.Value<DateTime>("value");
-                        Tracker.ExtractedFields[chatId].VehicleIdentificationNumber = data.SelectToken("vehicle_identification_number.value")?.ToString();
-                        Tracker.ExtractedFields[chatId].VehicleMake = data.SelectToken("vehicle_make.value")?.ToString();
-                        Tracker.ExtractedFields[chatId].VehicleModel = data.SelectToken("vehicle_model.value")?.ToString();
+                        user.ExtractedFields ??= new ExtractedFields();
+                        user.ExtractedFields.VehicleOwnersFullName = data.SelectToken("owner_name.value")?.ToString();
+                        user.ExtractedFields.VehiclesRegistrationDate = data["registration_date"]?.Value<DateTime>("value");
+                        user.ExtractedFields.VehicleIdentificationNumber = data.SelectToken("vehicle_identification_number.value")?.ToString();
+                        user.ExtractedFields.VehicleMake = data.SelectToken("vehicle_make.value")?.ToString();
+                        user.ExtractedFields.VehicleModel = data.SelectToken("vehicle_model.value")?.ToString();
+
+                        await _userRepository.SaveChangesAsync();
 
                         return $"Vehicle Owner's Full Name: {data.SelectToken("owner_name.value")?.ToString()}\n" +
                                $"Vehicle's Registration Date: {data["registration_date"]?.Value<DateTime>("value")}\n" +

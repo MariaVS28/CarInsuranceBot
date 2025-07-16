@@ -90,7 +90,6 @@ namespace CarInsuranceBot.DAL.Migrations
                     VehicleOwnersFullName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     VehicleMake = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     VehicleModel = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PolicyNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserId = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>

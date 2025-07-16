@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CarInsuranceBot.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250716105242_Initial")]
+    [Migration("20250716154012_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -111,9 +111,6 @@ namespace CarInsuranceBot.DAL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PassportNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PolicyNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Surname")

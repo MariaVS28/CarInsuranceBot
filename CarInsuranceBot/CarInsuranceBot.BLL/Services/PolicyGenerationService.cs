@@ -11,6 +11,8 @@ namespace CarInsuranceBot.BLL.Services
             var issueDate = DateTime.UtcNow;
             var price = "100";
             var expirationDate = issueDate.AddDays(7);
+            var random = new Random();
+            var policyNumber = random.Next(100000, 1000000).ToString();
 
             string prompt = @$"Generate a short insurance policy introduction paragraph addressed to the customer. Be friendly and professional.";
             var msg = await _aIChatService.GetChatCompletionAsync(prompt);
@@ -26,7 +28,7 @@ namespace CarInsuranceBot.BLL.Services
                     page.Content().Column(col =>
                     {
                         col.Item().Text(msg);
-                        col.Item().Text($"Policy Number: {extractedFields.PolicyNumber}");
+                        col.Item().Text($"Policy Number: {policyNumber}");
                         col.Item().Text($"Customer Name: {fullCustomerName}");
                         col.Item().Text($"Customer Passport Number: {extractedFields.PassportNumber}");
                         col.Item().Text($"Customer Date of Birth: {extractedFields.BirthDate}");

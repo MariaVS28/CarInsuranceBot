@@ -110,9 +110,6 @@ namespace CarInsuranceBot.DAL.Migrations
                     b.Property<string>("PassportNumber")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PolicyNumber")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Surname")
                         .HasColumnType("nvarchar(max)");
 
