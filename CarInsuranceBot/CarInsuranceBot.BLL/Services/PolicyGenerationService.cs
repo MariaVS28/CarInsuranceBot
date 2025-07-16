@@ -14,7 +14,7 @@ namespace CarInsuranceBot.BLL.Services
 
             string prompt = @$"Generate a short insurance policy introduction paragraph addressed to the customer. Be friendly and professional.";
             var msg = await _aIChatService.GetChatCompletionAsync(prompt);
-
+            var fullCustomerName = string.Concat(extractedFields.Surname, " ", extractedFields.GivenNames);
             var document = QuestPDF.Fluent.Document.Create(container =>
             {
                 container.Page(page =>
@@ -27,14 +27,14 @@ namespace CarInsuranceBot.BLL.Services
                     {
                         col.Item().Text(msg);
                         col.Item().Text($"Policy Number: {extractedFields.PolicyNumber}");
-                        col.Item().Text($"Customer Name: {extractedFields.Surname } + {extractedFields.GivenNames}");
+                        col.Item().Text($"Customer Name: {fullCustomerName}");
                         col.Item().Text($"Customer Passport Number: {extractedFields.PassportNumber}");
                         col.Item().Text($"Customer Date of Birth: {extractedFields.BirthDate}");
-                        col.Item().Text($"The Vehicle's License Plate Number: {extractedFields.VehiclesLicensePlateNumber}");
-                        col.Item().Text($"The Vehicle First Release Date: {extractedFields.VehicleFirstReleaseDate}");
+                        col.Item().Text($"The Vehicle Identification Number: {extractedFields.VehicleIdentificationNumber}");
+                        col.Item().Text($"The Vehicle's Registration Date: {extractedFields.VehiclesRegistrationDate}");
                         col.Item().Text($"The Vehicle Owner's Full Name: {extractedFields.VehicleOwnersFullName}");
-                        col.Item().Text($"The Vehicle's Brand: {extractedFields.VehiclesBrand}");
-                        col.Item().Text($"The Vehicle Identification Number (VIN): {extractedFields.VIN}");
+                        col.Item().Text($"The Vehicle Make: {extractedFields.VehicleMake}");
+                        col.Item().Text($"The Vehicle Model: {extractedFields.VehicleModel}");
                         col.Item().Text($"Issue Date: {issueDate:yyyy-MM-dd}");
                         col.Item().Text($"Expiration Date: {expirationDate:yyyy-MM-dd}");
                         col.Item().Text($"Total Price: ${price}");

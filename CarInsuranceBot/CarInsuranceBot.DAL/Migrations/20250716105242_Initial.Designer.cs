@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CarInsuranceBot.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250715160946_Initial")]
+    [Migration("20250716105242_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -122,20 +122,20 @@ namespace CarInsuranceBot.DAL.Migrations
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("VIN")
+                    b.Property<string>("VehicleIdentificationNumber")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("VehicleFirstReleaseDate")
+                    b.Property<string>("VehicleMake")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VehicleModel")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VehicleOwnersFullName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("VehiclesBrand")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("VehiclesLicensePlateNumber")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("VehiclesRegistrationDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

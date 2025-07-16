@@ -63,7 +63,7 @@ namespace CarInsuranceBot.BLL.Services
             }
             else
             {
-                data = await _mindeeService.ParseVehicleRegistrationAsync(chatId, fileBytes, file.FilePath);
+                data = await _mindeeService.ParseVehicleRegistrationAsync(chatId, fileBytes);
             }
 
             if (value == ProcessStatus.Ready)

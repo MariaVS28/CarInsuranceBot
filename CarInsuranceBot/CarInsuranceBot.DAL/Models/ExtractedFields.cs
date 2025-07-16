@@ -8,11 +8,12 @@
         public string? GivenNames { get; set; }
         public string? BirthDate { get; set; }
         public string? ExpiryDate { get; set; }
-        public string? VehiclesLicensePlateNumber { get; set; }
-        public string? VehicleFirstReleaseDate { get; set; }
+
+        public DateTime? VehiclesRegistrationDate { get; set; }
+        public string? VehicleIdentificationNumber { get; set; }
         public string? VehicleOwnersFullName { get; set; }
-        public string? VehiclesBrand { get; set; }
-        public string? VIN { get; set; }
+        public string? VehicleMake { get; set; }
+        public string? VehicleModel { get; set; }
         public string? PolicyNumber { get; set; }
 
         public long UserId { get; set; }

@@ -41,8 +41,14 @@ namespace CarInsuranceBot.API.Extensions
             services.AddSingleton(new MindeeClient(mindeeToken));
             services.AddHttpClient<IMindeeService, MindeeService>(client =>
             {
-                client.BaseAddress = new Uri("https://api.mindee.net/v1/"); 
+                client.BaseAddress = new Uri("https://api.mindee.net/"); 
                 client.DefaultRequestHeaders.Add("Authorization", $"Token {mindeeToken}");
+            }).ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                return new HttpClientHandler
+                {
+                    AllowAutoRedirect = false
+                };
             });
 
             var connectionString = configuration.GetConnectionString("AzureDb");
