@@ -1,9 +1,11 @@
 ﻿using System.Text.Json;
 using System.Text;
+using CarInsuranceBot.DAL.Repositories;
+using CarInsuranceBot.DAL.Models;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class AIChatService (HttpClient _httpClient) : IAIChatService
+    public class AIChatService (HttpClient _httpClient, IErrorRepository _errorRepository) : IAIChatService
     {
         public async Task<string> GetChatCompletionAsync(string userMessage)
         {
@@ -49,6 +51,15 @@ namespace CarInsuranceBot.BLL.Services
             }
             catch (Exception ex)
             {
+                var error = new Error
+                {
+                    StackTrace = ex.StackTrace,
+                    Message = ex.Message,
+                    Date = DateTime.UtcNow
+                };
+
+                await _errorRepository.AddErrorAsync(error);
+
                 throw ex;
             }
         }

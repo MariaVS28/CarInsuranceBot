@@ -9,7 +9,8 @@ namespace CarInsuranceBot.BLL.Services
 {
     public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, 
         ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService, 
-        IUserRepository _userRepository, IAuditLogRepository _auditLogRepository, IServiceScopeFactory _scopeFactory) : IFlowService
+        IUserRepository _userRepository, IAuditLogRepository _auditLogRepository, 
+        IErrorRepository _errorRepository, IServiceScopeFactory _scopeFactory) : IFlowService
     {
         private readonly HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
@@ -54,62 +55,77 @@ namespace CarInsuranceBot.BLL.Services
 
         public async Task ProcessTelegramFileAsync(long chatId, string fileId)
         {
-            var msg = "Please follow the instructions or call /help for support.";
-            var user = await _userRepository.GetUserAsync(chatId);
-            if (user == null
-                || !_processStatusesToUploadFile.Contains(user.Status))
+            try
             {
+                var msg = "Please follow the instructions or call /help for support.";
+                var user = await _userRepository.GetUserAsync(chatId);
+                if (user == null
+                    || !_processStatusesToUploadFile.Contains(user.Status))
+                {
+                    await _botClient.SendMessage(chatId, msg);
+                    return;
+                }
+
+                var file = await _botClient.GetFile(fileId);
+                var fileBytes = await _telegramFileLoaderService.DownloadTelegramFileAsync(file.FilePath);
+                var aiMsg = await _aIChatService.GetChatCompletionAsync("Provide the user an information that his photo was received.");
+
+                string? data;
+
+                if (user.Status == ProcessStatus.Ready || user.Status == ProcessStatus.PassportUploaded)
+                {
+                    data = await _mindeeService.ParsePassportFromBytesAsync(chatId, fileBytes, file.FilePath, user);
+                }
+                else
+                {
+                    data = await _mindeeService.ParseVehicleRegistrationAsync(chatId, fileBytes, file.FilePath, user);
+                }
+
+                if (user.Status == ProcessStatus.Ready)
+                {
+                    user.Status = ProcessStatus.PassportUploaded;
+                    user.LastUpdated = DateTime.UtcNow;
+                    await _userRepository.SaveChangesAsync();
+
+                    var auditLog = new AuditLog
+                    {
+                        Message = $"The User {user.UserId} uploaded passport",
+                        Date = DateTime.UtcNow
+                    };
+                    await _auditLogRepository.AddAuditLogAsync(auditLog);
+                }
+                else if (user.Status == ProcessStatus.PassportConfirmed)
+                {
+                    user.Status = ProcessStatus.VehicleRegistrationCertificateUploaded;
+                    user.LastUpdated = DateTime.UtcNow;
+                    await _userRepository.SaveChangesAsync();
+
+                    var auditLog = new AuditLog
+                    {
+                        Message = $"The User {user.UserId} uploaded Vehicle Registration Certificate",
+                        Date = DateTime.UtcNow
+                    };
+                    await _auditLogRepository.AddAuditLogAsync(auditLog);
+                }
+
+                msg = $"{aiMsg}\n" +
+                    $"Your data:\n {data}\n" +
+                    $"Please confirm the data is correct /yes or /no for retry.";
+
                 await _botClient.SendMessage(chatId, msg);
-                return;
             }
-
-            var file = await _botClient.GetFile(fileId);
-            var fileBytes = await _telegramFileLoaderService.DownloadTelegramFileAsync(file.FilePath);
-            var aiMsg = await _aIChatService.GetChatCompletionAsync("Provide the user an information that his photo was received.");
-
-            string? data;
-
-            if (user.Status == ProcessStatus.Ready || user.Status == ProcessStatus.PassportUploaded)
+            catch (Exception ex)
             {
-                data = await _mindeeService.ParsePassportFromBytesAsync(chatId, fileBytes, file.FilePath, user);
-            }
-            else
-            {
-                data = await _mindeeService.ParseVehicleRegistrationAsync(chatId, fileBytes, file.FilePath, user);
-            }
-
-            if (user.Status == ProcessStatus.Ready)
-            {
-                user.Status = ProcessStatus.PassportUploaded;
-                user.LastUpdated = DateTime.UtcNow;
-                await _userRepository.SaveChangesAsync();
-
-                var auditLog = new AuditLog
+                var error = new Error
                 {
-                    Message = $"The User {user.UserId} uploaded passport",
+                    StackTrace = ex.StackTrace,
+                    Message = ex.Message,
                     Date = DateTime.UtcNow
                 };
-                await _auditLogRepository.AddAuditLogAsync(auditLog);
-            }  
-            else if (user.Status == ProcessStatus.PassportConfirmed)
-            {
-                user.Status = ProcessStatus.VehicleRegistrationCertificateUploaded;
-                user.LastUpdated = DateTime.UtcNow;
-                await _userRepository.SaveChangesAsync();
 
-                var auditLog = new AuditLog
-                {
-                    Message = $"The User {user.UserId} uploaded Vehicle Registration Certificate",
-                    Date = DateTime.UtcNow
-                };
-                await _auditLogRepository.AddAuditLogAsync(auditLog);
+                await _errorRepository.AddErrorAsync(error);
+                throw ex;
             }
-
-            msg = $"{aiMsg}\n" +
-                $"Your data:\n {data}\n" +
-                $"Please confirm the data is correct /yes or /no for retry.";
-
-            await _botClient.SendMessage(chatId, msg);
         }
 
         public async Task ProcessYesAsync(long chatId, User user)
@@ -179,6 +195,7 @@ namespace CarInsuranceBot.BLL.Services
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             var policyGenerationService = scope.ServiceProvider.GetRequiredService<IPolicyGenerationService>();
             var auditLogRepository = scope.ServiceProvider.GetRequiredService<IAuditLogRepository>();
+            var errorRepository = scope.ServiceProvider.GetRequiredService<IErrorRepository>();
 
             User? user = null;
             try
@@ -221,7 +238,15 @@ namespace CarInsuranceBot.BLL.Services
                     user.Policy.Status = PolicyProcessStatus.Failed;
                     await userRepository.SaveChangesAsync();
                 }
-                
+
+                var error = new Error
+                {
+                    StackTrace = ex.StackTrace,
+                    Message = ex.Message,
+                    Date = DateTime.UtcNow
+                };
+
+                await errorRepository.AddErrorAsync(error);
                 throw ex;
             }
         }

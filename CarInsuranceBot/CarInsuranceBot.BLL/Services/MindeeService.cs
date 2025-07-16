@@ -7,7 +7,8 @@ using Newtonsoft.Json.Linq;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class MindeeService(MindeeClient _mindeeClient, HttpClient _httpClient, IUserRepository _userRepository) : IMindeeService
+    public class MindeeService(MindeeClient _mindeeClient, HttpClient _httpClient, IUserRepository _userRepository, 
+        IErrorRepository _errorRepository) : IMindeeService
     {
         public async Task<string> ParsePassportFromBytesAsync(long chatId, byte[] fileBytes, string filePath, User user)
         {
@@ -52,6 +53,14 @@ namespace CarInsuranceBot.BLL.Services
             }
             catch (Exception ex)
             {
+                var error = new Error
+                {
+                    StackTrace = ex.StackTrace,
+                    Message = ex.Message,
+                    Date = DateTime.UtcNow
+                };
+
+                await _errorRepository.AddErrorAsync(error);
                 throw ex;
             }
         }
@@ -99,6 +108,14 @@ namespace CarInsuranceBot.BLL.Services
             }
             catch (Exception ex)
             {
+                var error = new Error
+                {
+                    StackTrace = ex.StackTrace,
+                    Message = ex.Message,
+                    Date = DateTime.UtcNow
+                };
+
+                await _errorRepository.AddErrorAsync(error);
                 throw ex;
             }
         }
@@ -172,6 +189,14 @@ namespace CarInsuranceBot.BLL.Services
             }
             catch (Exception ex) 
             {
+                var error = new Error
+                {
+                    StackTrace = ex.StackTrace,
+                    Message = ex.Message,
+                    Date = DateTime.UtcNow
+                };
+
+                await _errorRepository.AddErrorAsync(error);
                 throw ex;
             }
         }
