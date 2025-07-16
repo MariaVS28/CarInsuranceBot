@@ -26,6 +26,7 @@ namespace CarInsuranceBot.API.Extensions
             services.AddScoped<IPolicyGenerationService, PolicyGenerationService>();
 
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
             QuestPDF.Settings.License = LicenseType.Community;
 

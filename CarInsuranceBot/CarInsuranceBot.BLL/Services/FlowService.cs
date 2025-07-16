@@ -9,7 +9,7 @@ namespace CarInsuranceBot.BLL.Services
 {
     public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, 
         ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService, 
-        IUserRepository _userRepository, IServiceScopeFactory _scopeFactory) : IFlowService
+        IUserRepository _userRepository, IAuditLogRepository _auditLogRepository, IServiceScopeFactory _scopeFactory) : IFlowService
     {
         private readonly HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
@@ -83,12 +83,26 @@ namespace CarInsuranceBot.BLL.Services
                 user.Status = ProcessStatus.PassportUploaded;
                 user.LastUpdated = DateTime.UtcNow;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} uploaded passport",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
             }  
             else if (user.Status == ProcessStatus.PassportConfirmed)
             {
                 user.Status = ProcessStatus.VehicleRegistrationCertificateUploaded;
                 user.LastUpdated = DateTime.UtcNow;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} uploaded Vehicle Registration Certificate",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
             }
 
             msg = $"{aiMsg}\n" +
@@ -114,6 +128,14 @@ namespace CarInsuranceBot.BLL.Services
                 user.Status = ProcessStatus.PassportConfirmed;
                 user.LastUpdated = DateTime.UtcNow;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} confirmed passpord data",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
+
                 await _botClient.SendMessage(chatId, aiMsg);
             }
             else if (user.Status == ProcessStatus.VehicleRegistrationCertificateUploaded)
@@ -122,6 +144,14 @@ namespace CarInsuranceBot.BLL.Services
                 user.Status = ProcessStatus.VehicleRegistrationCertificateConfirmed;
                 user.LastUpdated = DateTime.UtcNow;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} confirmed Vehicle Registration Certificate",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
+
                 await _botClient.SendMessage(chatId, msg);
             }
             else
@@ -130,6 +160,14 @@ namespace CarInsuranceBot.BLL.Services
                 user.Status = ProcessStatus.PriceAccepted;
                 user.LastUpdated = DateTime.UtcNow;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} accepted insurance price",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
+
                 await _botClient.SendMessage(chatId, aiMsg);
                 _ = GeneratePolicyAsync(chatId);
             }
@@ -140,6 +178,7 @@ namespace CarInsuranceBot.BLL.Services
             using var scope = _scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             var policyGenerationService = scope.ServiceProvider.GetRequiredService<IPolicyGenerationService>();
+            var auditLogRepository = scope.ServiceProvider.GetRequiredService<IAuditLogRepository>();
 
             User? user = null;
             try
@@ -161,6 +200,13 @@ namespace CarInsuranceBot.BLL.Services
                 user.Policy.Status = PolicyProcessStatus.Completed;
                 user.Policy.Title = "insurance_policy.pdf";
                 await userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The policy was generated for User {user.UserId}",
+                    Date = DateTime.UtcNow
+                };
+                await auditLogRepository.AddAuditLogAsync(auditLog);
 
                 await _botClient.SendDocument(
                     chatId: chatId,
@@ -205,6 +251,14 @@ namespace CarInsuranceBot.BLL.Services
                 user.Status = ProcessStatus.PriceDeclined;
                 user.LastUpdated = DateTime.UtcNow;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} declined insurance price",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
+
                 await _botClient.SendMessage(chatId, msg);
             }
         }
@@ -272,6 +326,13 @@ namespace CarInsuranceBot.BLL.Services
             {
                 user.Status = ProcessStatus.Ready;
                 await _userRepository.SaveChangesAsync();
+
+                var auditLog = new AuditLog
+                {
+                    Message = $"The User {user.UserId} is ready to start process",
+                    Date = DateTime.UtcNow
+                };
+                await _auditLogRepository.AddAuditLogAsync(auditLog);
             }
             
             await _botClient.SendMessage(chatId, aiMsg);
@@ -353,6 +414,15 @@ namespace CarInsuranceBot.BLL.Services
             var aiMsg = await _aIChatService.GetChatCompletionAsync("User requested the cancellation of the application, notify him that he will not receive insurance policy and kindly ask to try again.");
             user.Status = ProcessStatus.None;
             await _userRepository.SaveChangesAsync();
+
+            var auditLog = new AuditLog
+            {
+                Message = $"The User {user.UserId} stoped the process",
+                Date = DateTime.UtcNow
+            };
+
+            await _auditLogRepository.AddAuditLogAsync(auditLog);
+
             await _botClient.SendMessage(chatId, aiMsg);
         }
 
