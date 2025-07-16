@@ -164,7 +164,7 @@ namespace CarInsuranceBot.BLL.Services
 
                         user.ExtractedFields ??= new ExtractedFields();
                         user.ExtractedFields.VehicleOwnersFullName = data.SelectToken("owner_name.value")?.ToString();
-                        user.ExtractedFields.VehiclesRegistrationDate = data["registration_date"]?.Value<DateTime>("value");
+                        user.ExtractedFields.VehiclesRegistrationDate = data["registration_date"]?.Value<DateTime?>("value");
                         user.ExtractedFields.VehicleIdentificationNumber = data.SelectToken("vehicle_identification_number.value")?.ToString();
                         user.ExtractedFields.VehicleMake = data.SelectToken("vehicle_make.value")?.ToString();
                         user.ExtractedFields.VehicleModel = data.SelectToken("vehicle_model.value")?.ToString();
@@ -172,7 +172,7 @@ namespace CarInsuranceBot.BLL.Services
                         await _userRepository.SaveChangesAsync();
 
                         return $"Vehicle Owner's Full Name: {data.SelectToken("owner_name.value")?.ToString()}\n" +
-                               $"Vehicle's Registration Date: {data["registration_date"]?.Value<DateTime>("value")}\n" +
+                               $"Vehicle's Registration Date: {data["registration_date"]?.Value<DateTime?>("value")}\n" +
                                $"Vehicle Identification Number: {data.SelectToken("vehicle_identification_number.value")?.ToString()}\n" +
                                $"Vehicle Make: {data.SelectToken("vehicle_make.value")?.ToString()}\n" +
                                $"Vehicle Model: {data.SelectToken("vehicle_model.value")?.ToString()}";

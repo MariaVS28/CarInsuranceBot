@@ -47,6 +47,9 @@ namespace CarInsuranceBot.BLL.Services
                 case "/no":
                     await ProcessNoAsync(chatId, user!);
                     break;
+                case "/resendpolicy":
+                    await ProcessResendPolicyAsync(chatId, user!);
+                    break;
                 default:
                     await ProcessUnknownCommandAsync(chatId);
                     break;
@@ -225,11 +228,7 @@ namespace CarInsuranceBot.BLL.Services
                 };
                 await auditLogRepository.AddAuditLogAsync(auditLog);
 
-                await _botClient.SendDocument(
-                    chatId: chatId,
-                    document: Telegram.Bot.Types.InputFile.FromStream(stream, "insurance_policy.pdf"),
-                    caption: "📄 Here is your insurance policy PDF."
-                );
+                await SendPolicyAsync(stream, chatId);
             }
             catch(Exception ex)
             {
@@ -286,6 +285,28 @@ namespace CarInsuranceBot.BLL.Services
 
                 await _botClient.SendMessage(chatId, msg);
             }
+        }
+
+        public async Task ProcessResendPolicyAsync(long chatId, User user)
+        {
+            var msg = "You don't have policy yet, please call /help for support.";
+            if (user.Status != ProcessStatus.PolicyGenerated)
+            {
+                await _botClient.SendMessage(chatId, msg);
+                return;
+            }
+
+            msg = PolicyGeneratedMessage();
+            using var stream = new MemoryStream(user.Policy!.Content!);
+            await SendPolicyAsync(stream, chatId, msg);
+        }
+
+        private async Task SendPolicyAsync(MemoryStream stream, long chatId, string? msg = null)
+        {
+            await _botClient.SendDocument(
+             chatId: chatId,
+             document: Telegram.Bot.Types.InputFile.FromStream(stream, "insurance_policy.pdf"),
+             caption: $"{msg}📄 Here is your insurance policy PDF.");
         }
 
         private Task<string> UploadVehicleRegistrationCertificateMessageAsync()
@@ -406,12 +427,7 @@ namespace CarInsuranceBot.BLL.Services
                 case ProcessStatus.PolicyGenerated:
                     msg = PolicyGeneratedMessage();
                     using (var stream = new MemoryStream(user.Policy!.Content!))
-                    {
-                        await _botClient.SendDocument(
-                        chatId: chatId,
-                        document: Telegram.Bot.Types.InputFile.FromStream(stream, "insurance_policy.pdf"),
-                        caption: $"{msg}📄 Here is your insurance policy PDF.");
-                    }
+                    await SendPolicyAsync(stream, chatId, msg);
 
                     break;
             }
@@ -430,7 +446,8 @@ namespace CarInsuranceBot.BLL.Services
                     + "/start - Start working with the bot\n"
                     + "/help - Show instructions\n"
                     + "/cancel - Cancel current process\n"
-                    + "/status - Check current status to continue the application\n";
+                    + "/status - Check current status to continue the application\n"
+                    + "/resendpolicy - Resend your policy\n";
             await _botClient.SendMessage(chatId, msg);
         }
 
