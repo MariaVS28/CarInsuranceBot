@@ -59,6 +59,7 @@ namespace CarInsuranceBot.DAL
             modelBuilder.Entity<Error>(entity =>
             {
                 entity.HasKey(x => x.Id);
+                entity.Property(x => x.FaildStep).HasConversion<string>();
             });
             
             modelBuilder.Entity<AuditLog>(entity =>

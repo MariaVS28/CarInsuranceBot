@@ -10,7 +10,8 @@ namespace CarInsuranceBot.BLL.Services
     public class FlowService(ITelegramBotClient _botClient, IAIChatService _aIChatService, 
         ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService, 
         IUserRepository _userRepository, IAuditLogRepository _auditLogRepository, 
-        IErrorRepository _errorRepository, IServiceScopeFactory _scopeFactory) : IFlowService
+        IErrorRepository _errorRepository, IServiceScopeFactory _scopeFactory,
+        IPolicyRepository _policyRepository) : IFlowService
     {
         private readonly HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
@@ -68,6 +69,18 @@ namespace CarInsuranceBot.BLL.Services
                     break;
                 case "/revokeadmin":
                     await RevokeAdminCommandAsync(chatId, user!, targetId);
+                    break;
+                case "/policiessummary":
+                    await PoliciesSummaryCommandAsync(chatId, user!);
+                    break;
+                case "/faildpolicieslogs":
+                    await FaildPoliciesLogsCommandAsync(chatId, user!);
+                    break;
+                case "/mockdocumentdata":
+                    await MockDocumentDataCommandAsync(chatId, user!);
+                    break;
+                case "/unmockdocumentdata":
+                    await UnMockDocumentDataCommandAsync(chatId, user!);
                     break;
                 default:
                     await ProcessUnknownCommandAsync(chatId);
@@ -164,7 +177,8 @@ namespace CarInsuranceBot.BLL.Services
                 var error = new Error
                 {
                     StackTrace = ex.StackTrace,
-                    Message = ex.Message,
+                    Message = $"User {chatId}" + " " + ex.Message,
+                    FaildStep = FaildStep.ProcessFile,
                     Date = DateTime.UtcNow
                 };
 
@@ -283,7 +297,8 @@ namespace CarInsuranceBot.BLL.Services
                 var error = new Error
                 {
                     StackTrace = ex.StackTrace,
-                    Message = ex.Message,
+                    Message = $"User {chatId}" + " " + ex.Message,
+                    FaildStep = FaildStep.GenerationPolicy,
                     Date = DateTime.UtcNow
                 };
 
@@ -549,6 +564,94 @@ namespace CarInsuranceBot.BLL.Services
             await _userRepository.SetAdminAsync(targetId, false);
 
             var msg = $"Access revoked successfully to {targetId} user!";
+            await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task PoliciesSummaryCommandAsync(long chatId, User user)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            var statuses = await _policyRepository.GetStatusesAsync();
+            int countOfStatuses = 0;
+            int countOfInProgressStatuses = 0;
+            int countOfFailedStatuses = 0;
+            int countOfCompletedStatuses = 0;
+
+            foreach(var status in statuses)
+            {
+                if (status == PolicyProcessStatus.InProgress)
+                {
+                    countOfInProgressStatuses++;
+                }
+                else if (status == PolicyProcessStatus.Failed)
+                {
+                    countOfFailedStatuses++;
+                }
+                else
+                {
+                    countOfCompletedStatuses++;
+                }
+
+                countOfStatuses++;
+            }
+
+            var msg = "Summary of issued policies:\n"
+                    + $"Total issued: {countOfStatuses}\n"
+                    + $"In status Completed: {countOfCompletedStatuses}\n"
+                    + $"In status InProgress: {countOfInProgressStatuses}\n"
+                    + $"In status Failed: {countOfFailedStatuses}\n";
+            await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task FaildPoliciesLogsCommandAsync(long chatId, User user)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            var errors = await _errorRepository.GetPolicyErrorsAsync();
+            var msg = "Faid Policies Logs:\n";
+            foreach (var error in errors)
+            {
+                msg += $"{error}\n";
+            }
+
+            await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task MockDocumentDataCommandAsync(long chatId, User user)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            user.IsDocumentDataMocked = true;
+            await _userRepository.SaveChangesAsync();
+
+            var msg = $"Mock document data successfully!";
+            await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task UnMockDocumentDataCommandAsync(long chatId, User user)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            user.IsDocumentDataMocked = false;
+            await _userRepository.SaveChangesAsync();
+
+            var msg = $"Unmock document data successfully!";
             await _botClient.SendMessage(chatId, msg);
         }
 

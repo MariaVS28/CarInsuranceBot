@@ -1,4 +1,5 @@
 ﻿using CarInsuranceBot.DAL.Models;
+using CarInsuranceBot.DAL.Models.Enums;
 using CarInsuranceBot.DAL.Repositories;
 using Mindee;
 using Mindee.Input;
@@ -12,51 +13,55 @@ namespace CarInsuranceBot.BLL.Services
     {
         public async Task<string> ParsePassportFromBytesAsync(long chatId, byte[] fileBytes, string filePath, User user)
         {
-            try
+            if (user.IsDocumentDataMocked)
             {
-                //using var stream = new MemoryStream(fileBytes);
-
-                //var inputSource = new LocalInputSource(stream, filePath);
-
-                //var prediction = await _mindeeClient
-                //    .ParseAsync<PassportV1>(inputSource);
-
-                //var passportData = prediction.Document.Inference.Prediction;
-
-                //user.ExtractedFields ??= new ExtractedFields();
-                //user.ExtractedFields.PassportNumber = passportData.IdNumber?.Value;
-                //user.ExtractedFields.Surname = passportData.Surname?.Value;
-                //user.ExtractedFields.GivenNames = string.Join(" ", passportData.GivenNames);
-                //user.ExtractedFields.BirthDate = passportData.BirthDate?.Value;
-                //user.ExtractedFields.ExpiryDate = passportData.ExpiryDate?.Value;
-
-                //user.Documents.Add(new Document
-                //{
-                //    User = user,
-                //    Content = fileBytes,
-                //    Title = filePath
-                //});
-
-                //await _userRepository.SaveChangesAsync();
-
-                //return $"Passport Number: {passportData.IdNumber?.Value}\n" +
-                //       $"Surname: {passportData.Surname?.Value}\n" +
-                //       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
-                //       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
-                //       $"Expiry Date: {passportData.ExpiryDate?.Value}";
-
                 return $"Passport Number: 999228775\n" +
                        $"Surname: JERSEY SPECIMEN\n" +
                        $"Given Names: ANGELA ZOE\n" +
                        $"Date of Birth: 1995-01-01\n" +
                        $"Expiry Date: 2029-11-27";
             }
+
+            try
+            {
+                using var stream = new MemoryStream(fileBytes);
+
+                var inputSource = new LocalInputSource(stream, filePath);
+
+                var prediction = await _mindeeClient
+                    .ParseAsync<PassportV1>(inputSource);
+
+                var passportData = prediction.Document.Inference.Prediction;
+
+                user.ExtractedFields ??= new ExtractedFields();
+                user.ExtractedFields.PassportNumber = passportData.IdNumber?.Value;
+                user.ExtractedFields.Surname = passportData.Surname?.Value;
+                user.ExtractedFields.GivenNames = string.Join(" ", passportData.GivenNames);
+                user.ExtractedFields.BirthDate = passportData.BirthDate?.Value;
+                user.ExtractedFields.ExpiryDate = passportData.ExpiryDate?.Value;
+
+                user.Documents.Add(new Document
+                {
+                    User = user,
+                    Content = fileBytes,
+                    Title = filePath
+                });
+
+                await _userRepository.SaveChangesAsync();
+
+                return $"Passport Number: {passportData.IdNumber?.Value}\n" +
+                       $"Surname: {passportData.Surname?.Value}\n" +
+                       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
+                       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
+                       $"Expiry Date: {passportData.ExpiryDate?.Value}";
+            }
             catch (Exception ex)
             {
                 var error = new Error
                 {
                     StackTrace = ex.StackTrace,
-                    Message = ex.Message,
+                    Message = $"User {chatId}" + " " + ex.Message,
+                    FaildStep = FaildStep.ParsePassportData,
                     Date = DateTime.UtcNow
                 };
 
@@ -67,6 +72,15 @@ namespace CarInsuranceBot.BLL.Services
 
         public async Task<string> ParseVehicleRegistrationAsync(long chatId, byte[] fileBytes, string filePath, User user)
         {
+            if (user.IsDocumentDataMocked)
+            {
+                return "Vehicle Owner's Full Name: Mary Test\n" +
+                       "Vehicle's Registration Date: 20/10/2017 00:00:00\n" +
+                       "Vehicle Identification Number: 58674546874546841\n" +
+                       "Vehicle Make: Toyota\n" +
+                       "Vehicle Model: RAK15";
+            }
+
             var mindeeVrcKey = Environment.GetEnvironmentVariable("MINDEE_VRC_KEY");
             var mindeeVrcAccount = Environment.GetEnvironmentVariable("MINDEE_VRC_ACCOUNT");
             if (mindeeVrcKey == null || mindeeVrcAccount == null) throw new Exception("Missing environment variable.");
@@ -111,7 +125,8 @@ namespace CarInsuranceBot.BLL.Services
                 var error = new Error
                 {
                     StackTrace = ex.StackTrace,
-                    Message = ex.Message,
+                    Message = $"User {chatId}" + " " + ex.Message,
+                    FaildStep = FaildStep.ParseVRCData,
                     Date = DateTime.UtcNow
                 };
 
@@ -192,7 +207,7 @@ namespace CarInsuranceBot.BLL.Services
                 var error = new Error
                 {
                     StackTrace = ex.StackTrace,
-                    Message = ex.Message,
+                    Message = $"User {chatId}" + " " + ex.Message,
                     Date = DateTime.UtcNow
                 };
 

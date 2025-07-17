@@ -2,6 +2,7 @@
 using System.Text;
 using CarInsuranceBot.DAL.Repositories;
 using CarInsuranceBot.DAL.Models;
+using CarInsuranceBot.DAL.Models.Enums;
 
 namespace CarInsuranceBot.BLL.Services
 {
@@ -55,6 +56,7 @@ namespace CarInsuranceBot.BLL.Services
                 {
                     StackTrace = ex.StackTrace,
                     Message = ex.Message,
+                    FaildStep = FaildStep.ChatCompletion,
                     Date = DateTime.UtcNow
                 };
 
