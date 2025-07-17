@@ -6,5 +6,6 @@ namespace CarInsuranceBot.DAL.Repositories
     {
         Task<User?> GetUserAsync(long id);
         Task AddUserAsync(User user);
+        Task SetAdminAsync(long targetId, bool isAdmin);
     }
 }

@@ -14,7 +14,7 @@ namespace CarInsuranceBot.BLL.Services
     {
         private readonly HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
-        public async Task ProcessTelegramCommandAsync(long chatId, string? text)
+        public async Task ProcessTelegramCommandAsync(long chatId, string? text, Telegram.Bot.Types.User telegramUser)
         {
             var user = await _userRepository.GetUserAsync(chatId);
             if (user == null 
@@ -22,6 +22,19 @@ namespace CarInsuranceBot.BLL.Services
             {
                 await ProcessUnknownCommandAsync(chatId);
                 return;
+            }
+
+            long targetId = 0;
+
+            if (text.StartsWith($"/giveadmin"))
+            {
+                targetId = GetTargetId(text);
+                text = "/giveadmin";
+            }
+            else if (text.StartsWith($"/revokeadmin"))
+            {
+                targetId = GetTargetId(text);
+                text = "/revokeadmin";
             }
 
             switch (text)
@@ -33,7 +46,7 @@ namespace CarInsuranceBot.BLL.Services
                     await ProcessHelpAsync(chatId);
                     break;
                 case "/ready":
-                    await ProcessReadyAsync(chatId, user);
+                    await ProcessReadyAsync(chatId, user, telegramUser);
                     break;
                 case "/status":
                     await ProcessStatusCommandAsync(chatId, user);
@@ -50,10 +63,31 @@ namespace CarInsuranceBot.BLL.Services
                 case "/resendpolicy":
                     await ProcessResendPolicyAsync(chatId, user!);
                     break;
+                case "/giveadmin":
+                    await GiveAdminCommandAsync(chatId, user!, targetId);
+                    break;
+                case "/revokeadmin":
+                    await RevokeAdminCommandAsync(chatId, user!, targetId);
+                    break;
                 default:
                     await ProcessUnknownCommandAsync(chatId);
                     break;
             }
+        }
+
+        private long GetTargetId(string text)
+        {
+            long targetId;
+
+            int lastSpaceIndex = text.LastIndexOf(' ');
+
+            var result = lastSpaceIndex >= 0
+                ? text.Substring(lastSpaceIndex + 1)
+                : text;
+
+            long.TryParse(result, out targetId);
+
+            return targetId;
         }
 
         public async Task ProcessTelegramFileAsync(long chatId, string fileId)
@@ -77,10 +111,18 @@ namespace CarInsuranceBot.BLL.Services
 
                 if (user.Status == ProcessStatus.Ready || user.Status == ProcessStatus.PassportUploaded)
                 {
+                    user.FileUploadAttempts ??= new();
+                    user.FileUploadAttempts!.PassportAttemps++;
+                    await _userRepository.SaveChangesAsync();
+
                     data = await _mindeeService.ParsePassportFromBytesAsync(chatId, fileBytes, file.FilePath, user);
                 }
                 else
                 {
+                    user.FileUploadAttempts ??= new();
+                    user.FileUploadAttempts!.VRCAttemps++;
+                    await _userRepository.SaveChangesAsync();
+
                     data = await _mindeeService.ParseVehicleRegistrationAsync(chatId, fileBytes, file.FilePath, user);
                 }
 
@@ -131,7 +173,7 @@ namespace CarInsuranceBot.BLL.Services
             }
         }
 
-        public async Task ProcessYesAsync(long chatId, User user)
+        private async Task ProcessYesAsync(long chatId, User user)
         {
             var msg = "Please follow the instructions or call /help for support.";
             if (!(user.Status == ProcessStatus.PassportUploaded || user.Status == ProcessStatus.VehicleRegistrationCertificateUploaded
@@ -250,7 +292,7 @@ namespace CarInsuranceBot.BLL.Services
             }
         }
 
-        public async Task ProcessNoAsync(long chatId, User user)
+        private async Task ProcessNoAsync(long chatId, User user)
         {
             var msg = "Please follow the instructions or call /help for support.";
             if (!(user.Status == ProcessStatus.PassportUploaded || user.Status == ProcessStatus.VehicleRegistrationCertificateUploaded 
@@ -262,7 +304,8 @@ namespace CarInsuranceBot.BLL.Services
 
             if (user.Status == ProcessStatus.PassportUploaded)
             {
-                await ProcessReadyAsync(chatId, user);
+                var aiMsg = await ReadyMessageAsync();
+                await _botClient.SendMessage(chatId, aiMsg);
             }
             else if (user.Status == ProcessStatus.VehicleRegistrationCertificateUploaded)
             {
@@ -287,7 +330,7 @@ namespace CarInsuranceBot.BLL.Services
             }
         }
 
-        public async Task ProcessResendPolicyAsync(long chatId, User user)
+        private async Task ProcessResendPolicyAsync(long chatId, User user)
         {
             var msg = "You don't have policy yet, please call /help for support.";
             if (user.Status != ProcessStatus.PolicyGenerated)
@@ -355,7 +398,7 @@ namespace CarInsuranceBot.BLL.Services
             await _botClient.SendMessage(chatId, msg);
         }
 
-        private async Task ProcessReadyAsync(long chatId, User? user)
+        private async Task ProcessReadyAsync(long chatId, User? user, Telegram.Bot.Types.User telegramUser)
         {
             var aiMsg = await ReadyMessageAsync();
             if (user  == null)
@@ -363,6 +406,9 @@ namespace CarInsuranceBot.BLL.Services
                 user = new User
                 {
                     UserId = chatId,
+                    FirstName = telegramUser.FirstName,
+                    LastName = telegramUser.LastName,
+                    UserName = telegramUser.Username,
                     Status = ProcessStatus.Ready,
                     LastUpdated = DateTime.UtcNow,
                 };
@@ -371,6 +417,11 @@ namespace CarInsuranceBot.BLL.Services
             else
             {
                 user.Status = ProcessStatus.Ready;
+                user.FirstName = telegramUser.FirstName;
+                user.LastName = telegramUser.LastName;
+                user.UserName = telegramUser.Username;
+                user.LastUpdated = DateTime.UtcNow;
+
                 await _userRepository.SaveChangesAsync();
 
                 var auditLog = new AuditLog
@@ -455,6 +506,11 @@ namespace CarInsuranceBot.BLL.Services
         {
             var aiMsg = await _aIChatService.GetChatCompletionAsync("User requested the cancellation of the application, notify him that he will not receive insurance policy and kindly ask to try again.");
             user.Status = ProcessStatus.None;
+
+            user.FileUploadAttempts ??= new();
+            user.FileUploadAttempts!.PassportAttemps = 0;
+            user.FileUploadAttempts!.VRCAttemps = 0;
+
             await _userRepository.SaveChangesAsync();
 
             var auditLog = new AuditLog
@@ -466,6 +522,34 @@ namespace CarInsuranceBot.BLL.Services
             await _auditLogRepository.AddAuditLogAsync(auditLog);
 
             await _botClient.SendMessage(chatId, aiMsg);
+        }
+
+        private async Task GiveAdminCommandAsync(long chatId, User user, long targetId)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            await _userRepository.SetAdminAsync(targetId, true);
+
+            var msg = $"Access granted successfully to {targetId} user!";
+            await _botClient.SendMessage(chatId, msg);
+        }
+
+        private async Task RevokeAdminCommandAsync(long chatId, User user, long targetId)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            await _userRepository.SetAdminAsync(targetId, false);
+
+            var msg = $"Access revoked successfully to {targetId} user!";
+            await _botClient.SendMessage(chatId, msg);
         }
 
         private async Task ProcessUnknownCommandAsync(long chatId)

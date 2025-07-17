@@ -33,7 +33,7 @@ namespace CarInsuranceBot.API.Controllers
                 if (fileId != null)
                     await _flowService.ProcessTelegramFileAsync(chatId, fileId);
                 else
-                    await _flowService.ProcessTelegramCommandAsync(chatId, text);
+                    await _flowService.ProcessTelegramCommandAsync(chatId, text, update.Message.From);
             }
 
             return Ok();

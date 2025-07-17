@@ -22,5 +22,21 @@ namespace CarInsuranceBot.DAL.Repositories
             await _dbContext.Users.AddAsync(user);
             await _dbContext.SaveChangesAsync();
         }
+
+        public async Task SetAdminAsync(long targetId, bool isAdmin)
+        {
+            User user = new User
+            {
+                UserId = targetId,
+                LastUpdated = DateTime.UtcNow,
+                IsAdmin = isAdmin
+            };
+
+            _dbContext.Users.Attach(user);
+            _dbContext.Entry(user).Property(u => u.IsAdmin).IsModified = true;
+            _dbContext.Entry(user).Property(u => u.LastUpdated).IsModified = true;
+
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }
