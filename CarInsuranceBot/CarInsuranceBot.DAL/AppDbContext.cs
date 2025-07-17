@@ -11,6 +11,7 @@ namespace CarInsuranceBot.DAL
         public DbSet<Policy> Policies { get; set; }
         public DbSet<Error> Errors { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<FileUploadAttempt> FileUploadAttempts { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -33,6 +34,10 @@ namespace CarInsuranceBot.DAL
                 entity.HasOne(x => x.Policy)
                     .WithOne(x => x.User)
                     .HasForeignKey<Policy>(x => x.UserId);
+
+                entity.HasOne(x => x.FileUploadAttempts)
+                    .WithOne(x => x.User)
+                    .HasForeignKey<FileUploadAttempt>(x => x.UserId);
             });
 
             modelBuilder.Entity<ExtractedFields>(entity =>
@@ -57,6 +62,11 @@ namespace CarInsuranceBot.DAL
             });
             
             modelBuilder.Entity<AuditLog>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+            });
+            
+            modelBuilder.Entity<FileUploadAttempt>(entity =>
             {
                 entity.HasKey(x => x.Id);
             });

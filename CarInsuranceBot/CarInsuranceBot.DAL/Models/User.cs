@@ -11,5 +11,6 @@ namespace CarInsuranceBot.DAL.Models
         public ExtractedFields? ExtractedFields { get; set; }
         public List<Document> Documents { get; set; } = [];
         public Policy? Policy { get; set; }
+        public FileUploadAttempt? FileUploadAttempts { get; set; }
     }
 }

@@ -14,42 +14,42 @@ namespace CarInsuranceBot.BLL.Services
         {
             try
             {
-                using var stream = new MemoryStream(fileBytes);
+                //using var stream = new MemoryStream(fileBytes);
 
-                var inputSource = new LocalInputSource(stream, filePath);
+                //var inputSource = new LocalInputSource(stream, filePath);
 
-                var prediction = await _mindeeClient
-                    .ParseAsync<PassportV1>(inputSource);
+                //var prediction = await _mindeeClient
+                //    .ParseAsync<PassportV1>(inputSource);
 
-                var passportData = prediction.Document.Inference.Prediction;
+                //var passportData = prediction.Document.Inference.Prediction;
 
-                user.ExtractedFields ??= new ExtractedFields();
-                user.ExtractedFields.PassportNumber = passportData.IdNumber?.Value;
-                user.ExtractedFields.Surname = passportData.Surname?.Value;
-                user.ExtractedFields.GivenNames = string.Join(" ", passportData.GivenNames);
-                user.ExtractedFields.BirthDate = passportData.BirthDate?.Value;
-                user.ExtractedFields.ExpiryDate = passportData.ExpiryDate?.Value;
+                //user.ExtractedFields ??= new ExtractedFields();
+                //user.ExtractedFields.PassportNumber = passportData.IdNumber?.Value;
+                //user.ExtractedFields.Surname = passportData.Surname?.Value;
+                //user.ExtractedFields.GivenNames = string.Join(" ", passportData.GivenNames);
+                //user.ExtractedFields.BirthDate = passportData.BirthDate?.Value;
+                //user.ExtractedFields.ExpiryDate = passportData.ExpiryDate?.Value;
 
-                user.Documents.Add(new Document
-                {
-                    User = user,
-                    Content = fileBytes,
-                    Title = filePath
-                });
+                //user.Documents.Add(new Document
+                //{
+                //    User = user,
+                //    Content = fileBytes,
+                //    Title = filePath
+                //});
 
-                await _userRepository.SaveChangesAsync();
+                //await _userRepository.SaveChangesAsync();
 
-                return $"Passport Number: {passportData.IdNumber?.Value}\n" +
-                       $"Surname: {passportData.Surname?.Value}\n" +
-                       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
-                       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
-                       $"Expiry Date: {passportData.ExpiryDate?.Value}";
+                //return $"Passport Number: {passportData.IdNumber?.Value}\n" +
+                //       $"Surname: {passportData.Surname?.Value}\n" +
+                //       $"Given Names: {string.Join(" ", passportData.GivenNames)}\n" +
+                //       $"Date of Birth: {passportData.BirthDate?.Value}\n" +
+                //       $"Expiry Date: {passportData.ExpiryDate?.Value}";
 
-                //return $"Passport Number: 999228775\n" +
-                //       $"Surname: JERSEY SPECIMEN\n" +
-                //       $"Given Names: ANGELA ZOE\n" +
-                //       $"Date of Birth: 1995-01-01\n" +
-                //       $"Expiry Date: 2029-11-27";
+                return $"Passport Number: 999228775\n" +
+                       $"Surname: JERSEY SPECIMEN\n" +
+                       $"Given Names: ANGELA ZOE\n" +
+                       $"Date of Birth: 1995-01-01\n" +
+                       $"Expiry Date: 2029-11-27";
             }
             catch (Exception ex)
             {

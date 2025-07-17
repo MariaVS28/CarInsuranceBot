@@ -11,11 +11,14 @@ namespace CarInsuranceBot.DAL.Repositories
                 .Include(x => x.ExtractedFields)
                 .Include(x => x.Documents)
                 .Include(x => x.Policy)
+                .Include(x => x.FileUploadAttempts)
                 .FirstOrDefaultAsync(x => x.UserId == id);
         }
 
         public async Task AddUserAsync(User user)
         {
+            user.ExtractedFields = new();
+            user.FileUploadAttempts = new();
             await _dbContext.Users.AddAsync(user);
             await _dbContext.SaveChangesAsync();
         }
