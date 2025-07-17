@@ -24,6 +24,7 @@ namespace CarInsuranceBot.API.Extensions
 
             services.AddScoped<IFlowService, FlowService>();
             services.AddScoped<IPolicyGenerationService, PolicyGenerationService>();
+            services.AddSingleton<IDuplicateRequestDetectorService, DuplicateRequestDetectorService>();
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
