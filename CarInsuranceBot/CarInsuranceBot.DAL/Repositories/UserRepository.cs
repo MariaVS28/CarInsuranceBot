@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.DAL.Models;
+﻿using CarInsuranceBot.DAL.Dtos;
+using CarInsuranceBot.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CarInsuranceBot.DAL.Repositories
@@ -37,6 +38,34 @@ namespace CarInsuranceBot.DAL.Repositories
             _dbContext.Entry(user).Property(u => u.LastUpdated).IsModified = true;
 
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<List<UserPolicyDto>> GetUsersPendingPoliciesAsync()
+        {
+            var users = await _dbContext.Users
+                .AsNoTracking()
+                .Where(x => x.Policy != null && 
+                (x.Policy.Status == Models.Enums.PolicyProcessStatus.InProgress 
+                || x.Policy.Status == Models.Enums.PolicyProcessStatus.Failed))
+                .Select(x => new UserPolicyDto
+                {
+                    UserId = x.UserId,
+                    PassportNumber = x.ExtractedFields != null ? x.ExtractedFields.PassportNumber : string.Empty,
+                    Surname = x.ExtractedFields != null ? x.ExtractedFields.Surname : string.Empty,
+                    GivenNames = x.ExtractedFields != null ? x.ExtractedFields.GivenNames : string.Empty,
+                    BirthDate = x.ExtractedFields != null ? x.ExtractedFields.BirthDate : string.Empty,
+                    ExpiryDate = x.ExtractedFields != null ? x.ExtractedFields.ExpiryDate : string.Empty,
+                    Status = x.Policy != null ? x.Policy.Status.ToString() : string.Empty,
+                })
+                .ToListAsync();
+
+            return users;
+        }
+
+        public async Task<bool> IsUserIdExistAsync(long userId)
+        {
+            return await _dbContext.Users
+                .AnyAsync(x => x.UserId == userId);
         }
     }
 }

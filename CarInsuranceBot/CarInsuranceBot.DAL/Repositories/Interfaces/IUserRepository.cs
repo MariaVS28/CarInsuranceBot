@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.DAL.Models;
+﻿using CarInsuranceBot.DAL.Dtos;
+using CarInsuranceBot.DAL.Models;
 
 namespace CarInsuranceBot.DAL.Repositories
 {
@@ -7,5 +8,7 @@ namespace CarInsuranceBot.DAL.Repositories
         Task<User?> GetUserAsync(long id);
         Task AddUserAsync(User user);
         Task SetAdminAsync(long targetId, bool isAdmin);
+        Task<List<UserPolicyDto>> GetUsersPendingPoliciesAsync();
+        Task<bool> IsUserIdExistAsync(long userId);
     }
 }

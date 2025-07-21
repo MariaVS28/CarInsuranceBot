@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.DAL.Models.Enums;
+﻿using CarInsuranceBot.DAL.Models;
+using CarInsuranceBot.DAL.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace CarInsuranceBot.DAL.Repositories
@@ -13,6 +14,12 @@ namespace CarInsuranceBot.DAL.Repositories
                 .ToListAsync();
 
             return statuses;
+        }
+
+        public async Task RemovePolicyAsync(Policy policy)
+        {
+            _dbContext.Policies.Remove(policy);
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

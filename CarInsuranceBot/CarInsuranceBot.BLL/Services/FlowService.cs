@@ -11,7 +11,7 @@ namespace CarInsuranceBot.BLL.Services
         ITelegramFileLoaderService _telegramFileLoaderService, IMindeeService _mindeeService, 
         IUserRepository _userRepository, IAuditLogRepository _auditLogRepository, 
         IErrorRepository _errorRepository, IServiceScopeFactory _scopeFactory,
-        IPolicyRepository _policyRepository) : IFlowService
+        IPolicyRepository _policyRepository, IExtractedFieldsRepository _extractedFieldsRepository) : IFlowService
     {
         private readonly HashSet<ProcessStatus> _processStatusesToUploadFile = [ProcessStatus.Ready, ProcessStatus.PassportUploaded, ProcessStatus.PassportConfirmed, ProcessStatus.VehicleRegistrationCertificateUploaded];
 
@@ -37,6 +37,11 @@ namespace CarInsuranceBot.BLL.Services
                 targetId = GetTargetId(text);
                 text = "/revokeadmin";
             }
+            else if (text.StartsWith($"/approvepolicy"))
+            {
+                targetId = GetTargetId(text);
+                text = "/approvepolicy";
+            } 
 
             switch (text)
             {
@@ -81,6 +86,12 @@ namespace CarInsuranceBot.BLL.Services
                     break;
                 case "/unmockdocumentdata":
                     await UnMockDocumentDataCommandAsync(chatId, user!);
+                    break;
+                case "/getpendingpolicies":
+                    await GetPendingPoliciesCommandAsync(chatId, user!);
+                    break;
+                case "/approvepolicy":
+                    await ApprovePolicyCommandAsync(chatId, user!, targetId);
                     break;
                 default:
                     await ProcessUnknownCommandAsync(chatId);
@@ -231,9 +242,16 @@ namespace CarInsuranceBot.BLL.Services
             }
             else
             {
-                var aiMsg = await GeneratingInsurancePolicyMessageAsync();
+                var aiMsg = await ApprovalInsurancePolicyMessageAsync();
                 user.Status = ProcessStatus.PriceAccepted;
                 user.LastUpdated = DateTime.UtcNow;
+                await _userRepository.SaveChangesAsync();
+
+                user!.Policy = new Policy
+                {
+                    User = user,
+                    Status = PolicyProcessStatus.InProgress
+                };
                 await _userRepository.SaveChangesAsync();
 
                 var auditLog = new AuditLog
@@ -244,11 +262,10 @@ namespace CarInsuranceBot.BLL.Services
                 await _auditLogRepository.AddAuditLogAsync(auditLog);
 
                 await _botClient.SendMessage(chatId, aiMsg);
-                _ = GeneratePolicyAsync(chatId);
             }
         }
 
-        private async Task GeneratePolicyAsync(long chatId)
+        private async Task GeneratePolicyAsync(long targetId)
         {
             using var scope = _scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
@@ -259,21 +276,14 @@ namespace CarInsuranceBot.BLL.Services
             User? user = null;
             try
             {
-                user = await userRepository.GetUserAsync(chatId);
-                user!.Policy = new Policy
-                {
-                    User = user,
-                    Status = PolicyProcessStatus.InProgress
-                };
-                await userRepository.SaveChangesAsync();
-
-                byte[] pdfBytes = await policyGenerationService.GeneratePdfAsync(user.ExtractedFields!);
+                user = await userRepository.GetUserAsync(targetId);
+                byte[] pdfBytes = await policyGenerationService.GeneratePdfAsync(user!.ExtractedFields!);
 
                 using var stream = new MemoryStream(pdfBytes);
-
+                
                 user.Status = ProcessStatus.PolicyGenerated;
-                user.Policy.Content = pdfBytes;
-                user.Policy.Status = PolicyProcessStatus.Completed;
+                user.Policy!.Content = pdfBytes;
+                user.Policy!.Status = PolicyProcessStatus.Completed;
                 user.Policy.Title = "insurance_policy.pdf";
                 await userRepository.SaveChangesAsync();
 
@@ -284,11 +294,11 @@ namespace CarInsuranceBot.BLL.Services
                 };
                 await auditLogRepository.AddAuditLogAsync(auditLog);
 
-                await SendPolicyAsync(stream, chatId);
+                await SendPolicyAsync(stream, targetId);
             }
             catch(Exception ex)
             {
-                if (user.Policy != null)
+                if (user!.Policy != null)
                 {
                     user.Policy.Status = PolicyProcessStatus.Failed;
                     await userRepository.SaveChangesAsync();
@@ -297,7 +307,7 @@ namespace CarInsuranceBot.BLL.Services
                 var error = new Error
                 {
                     StackTrace = ex.StackTrace,
-                    Message = $"User {chatId}" + " " + ex.Message,
+                    Message = $"User {targetId}" + " " + ex.Message,
                     FaildStep = FaildStep.GenerationPolicy,
                     Date = DateTime.UtcNow
                 };
@@ -372,9 +382,9 @@ namespace CarInsuranceBot.BLL.Services
             return _aIChatService.GetChatCompletionAsync("Ask user to upload vehicle registration certificate, with some guidance how to ensure the quality. Do not mention that you can't process it.");
         }
         
-        private Task<string> GeneratingInsurancePolicyMessageAsync()
+        private Task<string> ApprovalInsurancePolicyMessageAsync()
         {
-            return _aIChatService.GetChatCompletionAsync("Say user that we generate insurance policy and ask kindly to wait.");
+            return _aIChatService.GetChatCompletionAsync("Say user that admin looks thowgh and answer on application, ask kindly to wait.");
         }
         
         private static string PolicyGeneratedMessage()
@@ -488,7 +498,7 @@ namespace CarInsuranceBot.BLL.Services
                     msg = await InsurancePriceMessageAsync(); 
                     break;
                 case ProcessStatus.PriceAccepted:
-                    msg = await GeneratingInsurancePolicyMessageAsync(); 
+                    msg = await ApprovalInsurancePolicyMessageAsync(); 
                     break;
                 case ProcessStatus.PolicyGenerated:
                     msg = PolicyGeneratedMessage();
@@ -525,6 +535,20 @@ namespace CarInsuranceBot.BLL.Services
             user.FileUploadAttempts ??= new();
             user.FileUploadAttempts!.PassportAttemps = 0;
             user.FileUploadAttempts!.VRCAttemps = 0;
+
+            if (user.ExtractedFields != null)
+            {
+                var extractedFields = user.ExtractedFields;
+                user.ExtractedFields = null;
+                await _extractedFieldsRepository.RemoveExtractedFieldsAsync(extractedFields);
+            }
+            
+            if(user.Policy != null)
+            {
+                var policy = user.Policy;
+                user.Policy = null;
+                await _policyRepository.RemovePolicyAsync(policy);
+            }
 
             await _userRepository.SaveChangesAsync();
 
@@ -652,6 +676,59 @@ namespace CarInsuranceBot.BLL.Services
             await _userRepository.SaveChangesAsync();
 
             var msg = $"Unmock document data successfully!";
+            await _botClient.SendMessage(chatId, msg);
+        }
+        
+        private async Task GetPendingPoliciesCommandAsync(long chatId, User user)
+        {
+            try
+            {
+                if (!user.IsAdmin)
+                {
+                    await ProcessUnknownCommandAsync(chatId);
+                    return;
+                }
+
+                var usersPolicies = await _userRepository.GetUsersPendingPoliciesAsync();
+                var msg = "The list of users waiting approvals:\n\n";
+                foreach (var userPolicy in usersPolicies)
+                {
+                    var userName = userPolicy.Surname + " " + userPolicy.GivenNames;
+                    msg += $"The user number: #{userPolicy.UserId}\n" +
+                        $"The user passport number: {userPolicy.PassportNumber}\n" +
+                        $"The user full name: {userName}\n" +
+                        $"The user birth date: {userPolicy.BirthDate}\n" +
+                        $"Expiry date: {userPolicy.ExpiryDate}\n" +
+                        $"The policy process status: {userPolicy.Status}\n\n";
+                }
+
+                await _botClient.SendMessage(chatId, msg);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private async Task ApprovePolicyCommandAsync(long chatId, User user, long targetId)
+        {
+            if (!user.IsAdmin)
+            {
+                await ProcessUnknownCommandAsync(chatId);
+                return;
+            }
+
+            var isuUerIdExist = await _userRepository.IsUserIdExistAsync(targetId);
+            if (!isuUerIdExist)
+            {
+                var message = $"The user {targetId} doesn't exist.";
+                await _botClient.SendMessage(chatId, message);
+                return;
+            }
+
+            _ = GeneratePolicyAsync(targetId);
+
+            var msg = $"The {targetId} user was approved!";
             await _botClient.SendMessage(chatId, msg);
         }
 
