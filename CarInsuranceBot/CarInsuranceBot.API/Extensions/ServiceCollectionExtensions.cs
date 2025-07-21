@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.BLL.Services;
+﻿using CarInsuranceBot.BLL.Commands;
+using CarInsuranceBot.BLL.Services;
 using CarInsuranceBot.BLL.Services.Interfaces;
 using CarInsuranceBot.DAL;
 using CarInsuranceBot.DAL.Repositories;
@@ -25,12 +26,31 @@ namespace CarInsuranceBot.API.Extensions
             services.AddScoped<IFlowService, FlowService>();
             services.AddScoped<IPolicyGenerationService, PolicyGenerationService>();
             services.AddSingleton<IDuplicateRequestDetectorService, DuplicateRequestDetectorService>();
+            services.AddScoped<ITelegramService, TelegramService>();
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             services.AddScoped<IErrorRepository, ErrorRepository>();
             services.AddScoped<IPolicyRepository, PolicyRepository>();
             services.AddScoped<IExtractedFieldsRepository, ExtractedFieldsRepository>();
+
+            services.AddScoped<IProcessApprovePolicy, ProcessApprovePolicy>();
+            services.AddScoped<IProcessCancel, ProcessCancel>();
+            services.AddScoped<IProcessFailedPoliciesLogs, ProcessFailedPoliciesLogs>();
+            services.AddScoped<IProcessGetPendingPolicies, ProcessGetPendingPolicies>();
+            services.AddScoped<IProcessGiveAdmin, ProcessGiveAdmin>();
+            services.AddScoped<IProcessHelp, ProcessHelp>();
+            services.AddScoped<IProcessMockDocumentData, ProcessMockDocumentData>();
+            services.AddScoped<IProcessNo, ProcessNo>();
+            services.AddScoped<IProcessPoliciesSummary, ProcessPoliciesSummary>();
+            services.AddScoped<IProcessReady, ProcessReady>();
+            services.AddScoped<IProcessResendPolicy, ProcessResendPolicy>();
+            services.AddScoped<IProcessRevokeAdmin, ProcessRevokeAdmin>();
+            services.AddScoped<IProcessStart, ProcessStart>();
+            services.AddScoped<IProcessStatus, ProcessStatus>();
+            services.AddScoped<IProcessUnknown, ProcessUnknown>();
+            services.AddScoped<IProcessUnMockDocumentData, ProcessUnMockDocumentData>();
+            services.AddScoped<IProcessYes, ProcessYes>();
 
             QuestPDF.Settings.License = LicenseType.Community;
 

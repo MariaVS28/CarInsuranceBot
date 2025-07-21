@@ -5,7 +5,8 @@ using QuestPDF.Fluent;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class PolicyGenerationService(IAIChatService _aIChatService, IErrorRepository _errorRepository) : IPolicyGenerationService
+    public class PolicyGenerationService(IAIChatService _aIChatService, 
+        IErrorRepository _errorRepository) : IPolicyGenerationService
     {
         public async Task<byte[]> GeneratePdfAsync(ExtractedFields extractedFields)
         {

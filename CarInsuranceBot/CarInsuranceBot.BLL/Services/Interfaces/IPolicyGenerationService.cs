@@ -1,6 +1,6 @@
 ﻿using CarInsuranceBot.DAL.Models;
 
-namespace CarInsuranceBot.BLL.Services.Interfaces
+namespace CarInsuranceBot.BLL.Services
 {
     public interface IPolicyGenerationService
     {

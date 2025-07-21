@@ -65,5 +65,33 @@ namespace CarInsuranceBot.BLL.Services
                 throw ex;
             }
         }
+        public Task<string> UploadVehicleRegistrationCertificateMessageAsync()
+        {
+            return GetChatCompletionAsync("Ask user to upload vehicle registration certificate, with some guidance how to ensure the quality. Do not mention that you can't process it.");
+        }
+
+        public Task<string> ApprovalInsurancePolicyMessageAsync()
+        {
+            return GetChatCompletionAsync("Say user that admin looks thowgh and answer on application, ask kindly to wait.");
+        }
+
+        public string PolicyGeneratedMessage()
+        {
+            var msg = "You've completed the application.\n";
+            return msg;
+        }
+
+        public Task<string> ReadyMessageAsync()
+        {
+            return GetChatCompletionAsync("Ask user to upload passport photo, with some guidance how to ensure the quality. Do not mention that you can't process it.");
+        }
+
+        public async Task<string> InsurancePriceMessageAsync()
+        {
+            var aiMsg = await GetChatCompletionAsync("Say user that price for insurance is 100$ and ask him to accept it.");
+            var msg = $"{aiMsg}" +
+                $"Choose /yes to accept, /no to decline or /cancel to stop the process.";
+            return msg;
+        }
     }
 }
