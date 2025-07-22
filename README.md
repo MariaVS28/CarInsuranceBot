@@ -90,20 +90,20 @@ The bot handles unrecognized commands gracefully by informing the user that the 
 
 ---
 
-# 🧱 General Architecture
+# General Architecture
 
 The project follows a layered architecture to maintain clean separation of concerns and improve maintainability.
 
 ---
 
-### 📡 API Layer
+### API Layer
 - Acts as the **entry point** for all external requests.
 - Handles HTTP endpoints or Telegram webhook triggers.
 - Responsible for routing and request delegation to the business layer.
 
 ---
 
-### ⚙️ BLL (Business Logic Layer)
+### BLL (Business Logic Layer)
 - Contains all **core application logic**.
 - Main components:
   - `FlowService` – routes Telegram commands to the appropriate handlers.
@@ -117,7 +117,7 @@ The project follows a layered architecture to maintain clean separation of conce
 
 ---
 
-### 🗄️ DAL (Data Access Layer)
+### DAL (Data Access Layer)
 - Contains:
   - **Entity Framework Core models** – representing entities such as `User`, `Policy`, `Document`, etc.
   - `DbContext` – manages database schema and entity tracking.
