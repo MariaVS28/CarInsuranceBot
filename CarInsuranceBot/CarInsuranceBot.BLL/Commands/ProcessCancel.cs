@@ -1,14 +1,13 @@
-﻿using CarInsuranceBot.DAL.Models.Enums;
-using CarInsuranceBot.DAL.Models;
-using Telegram.Bot;
+﻿using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Repositories;
 using CarInsuranceBot.BLL.Services;
+using CarInsuranceBot.BLL.Helpers;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessCancel(IAIChatService _aIChatService, ITelegramBotClient _botClient, IUserRepository _userRepository,
+    public class ProcessCancel(IAIChatService _aIChatService, ITelegramService _telegramService, IUserRepository _userRepository,
         IAuditLogRepository _auditLogRepository, IExtractedFieldsRepository _extractedFieldsRepository,
-        IPolicyRepository _policyRepository) : IProcessCancel
+        IPolicyRepository _policyRepository, IDateTimeHelper _dateTimeHelper) : IProcessCancel
     {
         public async Task ProcessAsync(long chatId, User user)
         {
@@ -38,12 +37,12 @@ namespace CarInsuranceBot.BLL.Commands
             var auditLog = new AuditLog
             {
                 Message = $"The User {user.UserId} stoped the process",
-                Date = DateTime.UtcNow
+                Date = _dateTimeHelper.UtcNow()
             };
 
             await _auditLogRepository.AddAuditLogAsync(auditLog);
 
-            await _botClient.SendMessage(chatId, aiMsg);
+            await _telegramService.SendMessage(chatId, aiMsg);
         }
     }
 }

@@ -1,9 +1,8 @@
 ﻿using CarInsuranceBot.BLL.Services;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessStart(IAIChatService _aIChatService, ITelegramBotClient _botClient) : IProcessStart
+    public class ProcessStart(IAIChatService _aIChatService, ITelegramService _telegramService) : IProcessStart
     {
         public async Task ProcessAsync(long chatId)
         {
@@ -19,7 +18,7 @@ namespace CarInsuranceBot.BLL.Commands
                     + "At any time, you can type /help for assistance.\n\n"
                     + "Let’s get started when you are ready!\n"
                     + "Click /ready to begin process";
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
         }
     }
 }

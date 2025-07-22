@@ -1,11 +1,13 @@
-﻿using CarInsuranceBot.DAL.Models;
+﻿using CarInsuranceBot.BLL.Helpers;
+using CarInsuranceBot.BLL.Services;
+using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Repositories;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessGetPendingPolicies(IUserRepository _userRepository, ITelegramBotClient _botClient,
-        IAuditLogRepository _auditLogRepository, IProcessUnknown _processUnknown) : IProcessGetPendingPolicies
+    public class ProcessGetPendingPolicies(IUserRepository _userRepository, ITelegramService _telegramService,
+        IAuditLogRepository _auditLogRepository, IProcessUnknown _processUnknown, 
+        IDateTimeHelper _dateTimeHelper) : IProcessGetPendingPolicies
     {
         public async Task ProcessAsync(long chatId, User user)
         {
@@ -28,12 +30,12 @@ namespace CarInsuranceBot.BLL.Commands
                     $"The policy process status: {userPolicy.Status}\n\n";
             }
 
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
 
             var auditLog = new AuditLog
             {
                 Message = $"The Admin {user.UserId} requested policies in pending.",
-                Date = DateTime.UtcNow
+                Date = _dateTimeHelper.UtcNow()
             };
             await _auditLogRepository.AddAuditLogAsync(auditLog);
         }

@@ -1,8 +1,8 @@
-﻿using Telegram.Bot;
+﻿using CarInsuranceBot.BLL.Services;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessHelp(ITelegramBotClient _botClient) : IProcessHelp
+    public class ProcessHelp(ITelegramService _telegramService) : IProcessHelp
     {
         public async Task ProcessAsync(long chatId)
         {
@@ -18,7 +18,7 @@ namespace CarInsuranceBot.BLL.Commands
                     + "/cancel - Cancel current process\n"
                     + "/status - Check current status to continue the application\n"
                     + "/resendpolicy - Resend your policy\n";
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
         }
     }
 }

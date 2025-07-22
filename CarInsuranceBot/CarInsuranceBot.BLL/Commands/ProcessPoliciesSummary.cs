@@ -1,12 +1,14 @@
 ﻿using CarInsuranceBot.DAL.Models.Enums;
 using CarInsuranceBot.DAL.Models;
-using Telegram.Bot;
 using CarInsuranceBot.DAL.Repositories;
+using CarInsuranceBot.BLL.Services;
+using CarInsuranceBot.BLL.Helpers;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessPoliciesSummary(ITelegramBotClient _botClient, IAuditLogRepository _auditLogRepository, 
-        IPolicyRepository _policyRepository, IProcessUnknown _processUnknown) : IProcessPoliciesSummary
+    public class ProcessPoliciesSummary(ITelegramService _telegramService, IAuditLogRepository _auditLogRepository, 
+        IPolicyRepository _policyRepository, IProcessUnknown _processUnknown, 
+        IDateTimeHelper _dateTimeHelper) : IProcessPoliciesSummary
     {
         public async Task ProcessAsync(long chatId, User user)
         {
@@ -45,12 +47,12 @@ namespace CarInsuranceBot.BLL.Commands
                     + $"In status Completed: {countOfCompletedStatuses}\n"
                     + $"In status InProgress: {countOfInProgressStatuses}\n"
                     + $"In status Failed: {countOfFailedStatuses}\n";
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
 
             var auditLog = new AuditLog
             {
                 Message = $"The Admin {user.UserId} requested summary of policies.",
-                Date = DateTime.UtcNow
+                Date = _dateTimeHelper.UtcNow()
             };
             await _auditLogRepository.AddAuditLogAsync(auditLog);
         }

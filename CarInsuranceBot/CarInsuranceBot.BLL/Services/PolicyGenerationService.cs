@@ -1,4 +1,4 @@
-﻿using CarInsuranceBot.BLL.Services.Interfaces;
+﻿using CarInsuranceBot.BLL.Helpers;
 using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Repositories;
 using QuestPDF.Fluent;
@@ -6,13 +6,13 @@ using QuestPDF.Fluent;
 namespace CarInsuranceBot.BLL.Services
 {
     public class PolicyGenerationService(IAIChatService _aIChatService, 
-        IErrorRepository _errorRepository) : IPolicyGenerationService
+        IErrorRepository _errorRepository, IDateTimeHelper _dateTimeHelper) : IPolicyGenerationService
     {
         public async Task<byte[]> GeneratePdfAsync(ExtractedFields extractedFields)
         {
             try
             {
-                var issueDate = DateTime.UtcNow;
+                var issueDate = _dateTimeHelper.UtcNow();
                 var price = "100";
                 var expirationDate = issueDate.AddDays(7);
                 var random = new Random();
@@ -68,7 +68,7 @@ namespace CarInsuranceBot.BLL.Services
                 {
                     StackTrace = ex.StackTrace,
                     Message = ex.Message,
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
 
                 await _errorRepository.AddErrorAsync(error);

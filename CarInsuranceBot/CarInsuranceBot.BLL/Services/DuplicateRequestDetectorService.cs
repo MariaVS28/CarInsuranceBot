@@ -1,11 +1,10 @@
-﻿using CarInsuranceBot.BLL.Services.Interfaces;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class DuplicateRequestDetectorService : IDuplicateRequestDetectorService
+    public class DuplicateRequestDetectorService() : IDuplicateRequestDetectorService
     {
         private readonly ConcurrentDictionary<(long userId, string hash), DateTime> _messageCache = new();
         private readonly TimeSpan Expiration = TimeSpan.FromSeconds(5);

@@ -1,15 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot.Types;
 using CarInsuranceBot.BLL.Services;
-using CarInsuranceBot.BLL.Services.Interfaces;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class TelegramController(IFlowService _flowService, IDuplicateRequestDetectorService _duplicateRequestDetectorService,
-        ITelegramBotClient _botClient) : ControllerBase
+        ITelegramService _telegramService) : ControllerBase
     {
         [HttpPost("update")]
         public async Task<IActionResult> Post([FromBody] Update update)
@@ -25,7 +23,7 @@ namespace CarInsuranceBot.API.Controllers
                 if (text != null && _duplicateRequestDetectorService.IsDuplicate(chatId, text))
                 {
                     var msg = "Duplicate message detected — skipping.";
-                    await _botClient.SendMessage(chatId, msg);
+                    await _telegramService.SendMessage(chatId, msg);
                     return Ok();
                 }
 

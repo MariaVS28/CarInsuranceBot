@@ -1,15 +1,15 @@
-﻿using CarInsuranceBot.BLL.Services;
+﻿using CarInsuranceBot.BLL.Helpers;
+using CarInsuranceBot.BLL.Services;
 using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Models.Enums;
 using CarInsuranceBot.DAL.Repositories;
 using Microsoft.Extensions.DependencyInjection;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Commands 
 {
-    public class ProcessApprovePolicy(IUserRepository _userRepository, ITelegramBotClient _botClient,
-        IAuditLogRepository _auditLogRepository, ITelegramService _telegramService, 
-        IServiceScopeFactory _scopeFactory, IProcessUnknown _processUnknown) : IProcessApprovePolicy
+    public class ProcessApprovePolicy(IUserRepository _userRepository, ITelegramService _telegramService,
+        IAuditLogRepository _auditLogRepository,IServiceScopeFactory _scopeFactory, 
+        IProcessUnknown _processUnknown, IDateTimeHelper _dateTimeHelper) : IProcessApprovePolicy
     {
         public async Task ProcessAsync(long chatId, User user, long targetId)
         {
@@ -23,19 +23,19 @@ namespace CarInsuranceBot.BLL.Commands
             if (!isuUerIdExist)
             {
                 var message = $"The user {targetId} doesn't exist.";
-                await _botClient.SendMessage(chatId, message);
+                await _telegramService.SendMessage(chatId, message);
                 return;
             }
 
             _ = GeneratePolicyAsync(targetId);
 
             var msg = $"The {targetId} user was approved!";
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
 
             var auditLog = new AuditLog
             {
                 Message = $"The Admin {user.UserId} approved policy of {targetId} user.",
-                Date = DateTime.UtcNow
+                Date = _dateTimeHelper.UtcNow()
             };
             await _auditLogRepository.AddAuditLogAsync(auditLog);
         }
@@ -65,7 +65,7 @@ namespace CarInsuranceBot.BLL.Commands
                 var auditLog = new AuditLog
                 {
                     Message = $"The policy was generated for User {user.UserId}",
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
                 await auditLogRepository.AddAuditLogAsync(auditLog);
 
@@ -84,7 +84,7 @@ namespace CarInsuranceBot.BLL.Commands
                     StackTrace = ex.StackTrace,
                     Message = $"User {targetId}" + " " + ex.Message,
                     FaildStep = FaildStep.GenerationPolicy,
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
 
                 await errorRepository.AddErrorAsync(error);

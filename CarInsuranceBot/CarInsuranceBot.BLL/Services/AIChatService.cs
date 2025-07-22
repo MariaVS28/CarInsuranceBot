@@ -3,10 +3,11 @@ using System.Text;
 using CarInsuranceBot.DAL.Repositories;
 using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Models.Enums;
+using CarInsuranceBot.BLL.Helpers;
 
 namespace CarInsuranceBot.BLL.Services
 {
-    public class AIChatService (HttpClient _httpClient, IErrorRepository _errorRepository) : IAIChatService
+    public class AIChatService (HttpClient _httpClient, IErrorRepository _errorRepository, IDateTimeHelper _dateTimeHelper) : IAIChatService
     {
         public async Task<string> GetChatCompletionAsync(string userMessage)
         {
@@ -57,7 +58,7 @@ namespace CarInsuranceBot.BLL.Services
                     StackTrace = ex.StackTrace,
                     Message = ex.Message,
                     FaildStep = FaildStep.ChatCompletion,
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
 
                 await _errorRepository.AddErrorAsync(error);

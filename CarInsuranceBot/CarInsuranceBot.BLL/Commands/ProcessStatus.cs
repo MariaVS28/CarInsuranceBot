@@ -1,18 +1,16 @@
 ﻿using CarInsuranceBot.BLL.Services;
 using CarInsuranceBot.DAL.Models;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessStatus(IAIChatService _aIChatService, ITelegramBotClient _botClient, 
-        ITelegramService _telegramService) : IProcessStatus
+    public class ProcessStatus(IAIChatService _aIChatService, ITelegramService _telegramService) : IProcessStatus
     {
         public async Task ProcessAsync(long chatId, User? user)
         {
             var msg = "Process wasn't started.";
             if (user == null)
             {
-                await _botClient.SendMessage(chatId, msg);
+                await _telegramService.SendMessage(chatId, msg);
                 return;
             }
 
@@ -54,7 +52,7 @@ namespace CarInsuranceBot.BLL.Commands
 
                     break;
             }
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
         }
     }
 }

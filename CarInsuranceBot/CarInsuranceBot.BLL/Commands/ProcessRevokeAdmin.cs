@@ -1,12 +1,14 @@
 ﻿
+using CarInsuranceBot.BLL.Helpers;
+using CarInsuranceBot.BLL.Services;
 using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Repositories;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessRevokeAdmin(ITelegramBotClient _botClient, IUserRepository _userRepository,
-        IAuditLogRepository _auditLogRepository, IProcessUnknown _processUnknown) : IProcessRevokeAdmin
+    public class ProcessRevokeAdmin(ITelegramService _telegramService, IUserRepository _userRepository,
+        IAuditLogRepository _auditLogRepository, IProcessUnknown _processUnknown, 
+        IDateTimeHelper _dateTimeHelper) : IProcessRevokeAdmin
     {
         public async Task ProcessAsync(long chatId, User user, long targetId)
         {
@@ -20,19 +22,19 @@ namespace CarInsuranceBot.BLL.Commands
             if (!isuUerIdExist)
             {
                 var message = $"The user {targetId} doesn't exist.";
-                await _botClient.SendMessage(chatId, message);
+                await _telegramService.SendMessage(chatId, message);
                 return;
             }
 
             await _userRepository.SetAdminAsync(targetId, false);
 
             var msg = $"Access revoked successfully to {targetId} user!";
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
 
             var auditLog = new AuditLog
             {
-                Message = $"The User {user.UserId} lost access to admin right.",
-                Date = DateTime.UtcNow
+                Message = $"The User {targetId} lost access to admin right.",
+                Date = _dateTimeHelper.UtcNow()
             };
             await _auditLogRepository.AddAuditLogAsync(auditLog);
         }

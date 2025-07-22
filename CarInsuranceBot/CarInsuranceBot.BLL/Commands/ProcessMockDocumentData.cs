@@ -1,11 +1,13 @@
-﻿using CarInsuranceBot.DAL.Models;
+﻿using CarInsuranceBot.BLL.Helpers;
+using CarInsuranceBot.BLL.Services;
+using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Repositories;
-using Telegram.Bot;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessMockDocumentData(IUserRepository _userRepository, ITelegramBotClient _botClient, 
-        IAuditLogRepository _auditLogRepository, IProcessUnknown _processUnknown) : IProcessMockDocumentData
+    public class ProcessMockDocumentData(IUserRepository _userRepository, ITelegramService _telegramService, 
+        IAuditLogRepository _auditLogRepository, IProcessUnknown _processUnknown, 
+        IDateTimeHelper _dateTimeHelper) : IProcessMockDocumentData
     {
         public async Task ProcessAsync(long chatId, User user)
         {
@@ -19,12 +21,12 @@ namespace CarInsuranceBot.BLL.Commands
             await _userRepository.SaveChangesAsync();
 
             var msg = $"Mock document data successfully!";
-            await _botClient.SendMessage(chatId, msg);
+            await _telegramService.SendMessage(chatId, msg);
 
             var auditLog = new AuditLog
             {
                 Message = $"The Admin {user.UserId} mocked document data.",
-                Date = DateTime.UtcNow
+                Date = _dateTimeHelper.UtcNow()
             };
             await _auditLogRepository.AddAuditLogAsync(auditLog);
         }

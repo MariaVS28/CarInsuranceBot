@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.DAL.Models;
+﻿using CarInsuranceBot.BLL.Helpers;
+using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Models.Enums;
 using CarInsuranceBot.DAL.Repositories;
 using Mindee;
@@ -9,7 +10,7 @@ using Newtonsoft.Json.Linq;
 namespace CarInsuranceBot.BLL.Services
 {
     public class MindeeService(MindeeClient _mindeeClient, HttpClient _httpClient, IUserRepository _userRepository, 
-        IErrorRepository _errorRepository) : IMindeeService
+        IErrorRepository _errorRepository, IDateTimeHelper _dateTimeHelper) : IMindeeService
     {
         public async Task<string> ParsePassportFromBytesAsync(long chatId, byte[] fileBytes, string filePath, User user)
         {
@@ -62,7 +63,7 @@ namespace CarInsuranceBot.BLL.Services
                     StackTrace = ex.StackTrace,
                     Message = $"User {chatId}" + " " + ex.Message,
                     FaildStep = FaildStep.ParsePassportData,
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
 
                 await _errorRepository.AddErrorAsync(error);
@@ -127,7 +128,7 @@ namespace CarInsuranceBot.BLL.Services
                     StackTrace = ex.StackTrace,
                     Message = $"User {chatId}" + " " + ex.Message,
                     FaildStep = FaildStep.ParseVRCData,
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
 
                 await _errorRepository.AddErrorAsync(error);
@@ -208,7 +209,7 @@ namespace CarInsuranceBot.BLL.Services
                 {
                     StackTrace = ex.StackTrace,
                     Message = $"User {chatId}" + " " + ex.Message,
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
 
                 await _errorRepository.AddErrorAsync(error);

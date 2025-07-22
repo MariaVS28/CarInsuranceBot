@@ -1,6 +1,6 @@
 ﻿using CarInsuranceBot.BLL.Commands;
+using CarInsuranceBot.BLL.Helpers;
 using CarInsuranceBot.BLL.Services;
-using CarInsuranceBot.BLL.Services.Interfaces;
 using CarInsuranceBot.DAL;
 using CarInsuranceBot.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +51,9 @@ namespace CarInsuranceBot.API.Extensions
             services.AddScoped<IProcessUnknown, ProcessUnknown>();
             services.AddScoped<IProcessUnMockDocumentData, ProcessUnMockDocumentData>();
             services.AddScoped<IProcessYes, ProcessYes>();
+
+            services.AddScoped<ICommandHandlerResolver, CommandHandlerResolver>();
+            services.AddScoped<IDateTimeHelper, DateTimeHelper>();
 
             QuestPDF.Settings.License = LicenseType.Community;
 

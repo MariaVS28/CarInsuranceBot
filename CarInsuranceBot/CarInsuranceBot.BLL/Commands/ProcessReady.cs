@@ -1,13 +1,12 @@
-﻿using CarInsuranceBot.DAL.Models.Enums;
-using CarInsuranceBot.DAL.Models;
-using Telegram.Bot;
+﻿using CarInsuranceBot.DAL.Models;
 using CarInsuranceBot.DAL.Repositories;
 using CarInsuranceBot.BLL.Services;
+using CarInsuranceBot.BLL.Helpers;
 
 namespace CarInsuranceBot.BLL.Commands
 {
-    public class ProcessReady(IAIChatService _aIChatService, ITelegramBotClient _botClient, IUserRepository _userRepository,
-        IAuditLogRepository _auditLogRepository) : IProcessReady
+    public class ProcessReady(IAIChatService _aIChatService, ITelegramService _telegramService, IUserRepository _userRepository,
+        IAuditLogRepository _auditLogRepository, IDateTimeHelper _dateTimeHelper) : IProcessReady
     {
         public async Task ProcessAsync(long chatId, User? user, Telegram.Bot.Types.User telegramUser)
         {
@@ -21,7 +20,7 @@ namespace CarInsuranceBot.BLL.Commands
                     LastName = telegramUser.LastName,
                     UserName = telegramUser.Username,
                     Status = DAL.Models.Enums.ProcessStatus.Ready,
-                    LastUpdated = DateTime.UtcNow,
+                    LastUpdated = _dateTimeHelper.UtcNow(),
                 };
                 await _userRepository.AddUserAsync(user);
             }
@@ -31,19 +30,19 @@ namespace CarInsuranceBot.BLL.Commands
                 user.FirstName = telegramUser.FirstName;
                 user.LastName = telegramUser.LastName;
                 user.UserName = telegramUser.Username;
-                user.LastUpdated = DateTime.UtcNow;
+                user.LastUpdated = _dateTimeHelper.UtcNow();
 
                 await _userRepository.SaveChangesAsync();
 
                 var auditLog = new AuditLog
                 {
                     Message = $"The User {user.UserId} is ready to start process",
-                    Date = DateTime.UtcNow
+                    Date = _dateTimeHelper.UtcNow()
                 };
                 await _auditLogRepository.AddAuditLogAsync(auditLog);
             }
 
-            await _botClient.SendMessage(chatId, aiMsg);
+            await _telegramService.SendMessage(chatId, aiMsg);
         }
     }
 }
