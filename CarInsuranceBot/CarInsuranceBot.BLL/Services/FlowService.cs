@@ -18,6 +18,14 @@ namespace CarInsuranceBot.BLL.Services
 
         public async Task ProcessTelegramCommandAsync(long chatId, string? text, Telegram.Bot.Types.User telegramUser)
         {
+            if (!text!.StartsWith("/"))
+            {
+                var msg = "You are a Telegram bot for car insurance. Please answer on client quesion. You operate only with these four commands: /start /help /ready /status. If the user asks a question or writes a message that seems related to car insurance, try to answer it briefly if possible.If the message is unrelated or unclear, say it. Text:\n";
+                var aiMsg = await _aIChatService.GetChatCompletionAsync(msg + text);
+                await _telegramService.SendMessage(chatId, aiMsg);
+                return;
+            }
+
             var user = await _userRepository.GetUserAsync(chatId);
             if (user == null 
                 && (text != "/start" && text != "/help" && text != "/ready" && text != "/status"))
